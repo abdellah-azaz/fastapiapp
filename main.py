@@ -9,6 +9,10 @@ from pydantic import BaseModel
 from contextlib import asynccontextmanager
 from mail import send_password_email
 from dotenv import load_dotenv
+import platform
+import subprocess
+import json
+import sys
 
 # Charger les variables d'environnement
 load_dotenv()
@@ -357,6 +361,45 @@ async def send_plain_password_to_members(request: SendPasswordRequest):
         raise HTTPException(status_code=500, detail=f"Erreur base de données: {err}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/scanner")
+async def scan_endpoint():
+    """
+    Détecte l'OS, lance le scanner approprié et retourne les résultats.
+    """
+    systeme = platform.system()
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    if systeme == "Windows":
+        script_path = os.path.join(base_dir, "modules", "Scanner.py")
+        result_path = r"C:\AuditAI\data\scan_complet.json"
+    elif systeme == "Linux":
+        script_path = os.path.join(base_dir, "modules", "linux_scanner.py")
+        result_path = "/tmp/AuditAI/data/scan_linux.json"
+    else:
+        raise HTTPException(status_code=400, detail=f"Système {systeme} non supporté")
+
+    if not os.path.exists(script_path):
+        raise HTTPException(status_code=500, detail=f"Script de scan introuvable: {script_path}")
+
+    try:
+        # Exécuter le scanner
+        process = subprocess.run([sys.executable, script_path], capture_output=True, text=True)
+        
+        if process.returncode != 0:
+            raise HTTPException(status_code=500, detail=f"Erreur lors du scan: {process.stderr}")
+
+        # Lire le fichier résultat
+        if not os.path.exists(result_path):
+            raise HTTPException(status_code=500, detail="Fichier de résultat non généré")
+
+        with open(result_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            
+        return data
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
 
 @app.get("/")
 async def root():
