@@ -92,6 +92,12 @@ class SendPasswordRequest(BaseModel):
     password: str
     member_ids: list[int]
 
+class ScannerAVRequest(BaseModel):
+    path: str
+    auto: bool = False
+    report: bool = True
+    html: bool = False
+
 # --- Application FastAPI ---
 app = FastAPI(
     title="Crypton API",
@@ -400,6 +406,171 @@ async def scan_endpoint():
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
+
+@app.post("/scannerav")
+async def scanner_av_endpoint(request: ScannerAVRequest):
+    """
+    Lance un scan multi-couches (ClamAV, SHA256, Heuristique, Entropie) via le binaire AV-Shield.
+    """
+    import re
+    import traceback
+    
+    print(f"DEBUG: Requête scannerav pour le chemin: {request.path}")
+    
+    # Configuration des chemins relatifs à ce fichier
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    av_shield_dir = os.path.join(base_dir, "av-shield")
+    av_bin = os.path.join(av_shield_dir, "avshield")
+    reports_dir = os.path.join(av_shield_dir, "reports")
+
+    if not os.path.exists(av_bin):
+        print(f"ERROR: Binaire AV-Shield introuvable à {av_bin}")
+        raise HTTPException(status_code=500, detail=f"Binaire AV-Shield introuvable à {av_bin}")
+
+    # Construction de la commande
+    cmd = [av_bin, "scan", request.path]
+    if request.report:
+        cmd.append("--report")
+    if request.html:
+        cmd.append("--html")
+    if request.auto:
+        cmd.append("--auto")
+
+    print(f"DEBUG: Exécution de la commande: {' '.join(cmd)}")
+
+    try:
+        # Exécution du binaire C
+        process = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            cwd=av_shield_dir,
+            timeout=300
+        )
+
+        print(f"DEBUG: Sortie standard du binaire:\n{process.stdout}")
+        if process.stderr:
+            print(f"DEBUG: Sortie d'erreur du binaire:\n{process.stderr}")
+
+        # Nettoyage des codes couleur ANSI pour le parsing
+        output_clean = re.sub(r'\x1b\[[0-9;]*m', '', process.stdout + process.stderr)
+        
+        # Recherche du fichier rapport JSON généré
+        json_file = None
+        # Attention au regex: on cherche "Rapport JSON généré: (reports/)?XXXX.json"
+        match = re.search(r'Rapport JSON généré:\s+(?:reports/)?(RPT_[^\s]+\.json)', output_clean)
+        if match:
+            json_file = match.group(1)
+            print(f"DEBUG: Rapport JSON détecté: {json_file}")
+        else:
+            print("WARNING: Aucun rapport JSON détecté dans la sortie du binaire.")
+        
+        # Lecture du contenu du rapport
+        report_data = None
+        if json_file:
+            json_full_path = os.path.join(reports_dir, json_file)
+            print(f"DEBUG: Lecture du rapport à {json_full_path}")
+            if os.path.exists(json_full_path):
+                try:
+                    with open(json_full_path, 'r', encoding='utf-8') as f:
+                        report_data = json.load(f)
+                    print("DEBUG: Rapport JSON chargé avec succès")
+                except Exception as e:
+                    print(f"ERROR: Erreur lecture JSON: {e}")
+                    traceback.print_exc()
+            else:
+                print(f"ERROR: Fichier rapport {json_full_path} inexistant après génération supposée.")
+
+        return {
+            "success": True,
+            "scan_id": report_data.get("report_id") if report_data else "UNKNOWN",
+            "output": process.stdout,
+            "report": report_data,
+            "error_log": process.stderr if process.returncode != 0 else None
+        }
+
+    except subprocess.TimeoutExpired:
+        print("ERROR: TimeoutExpired lors du scan.")
+        raise HTTPException(status_code=408, detail="Le scan a dépassé le temps limite de 5 minutes.")
+    except Exception as e:
+        print(f"ERROR: Exception lors de scannerav: {str(e)}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Erreur lors de l'exécution du scan: {str(e)}")
+
+@app.get("/av/stats")
+async def get_av_stats():
+    """Récupère les statistiques globales d'AV-Shield"""
+    import traceback
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    av_shield_dir = os.path.join(base_dir, "av-shield")
+    av_bin = os.path.join(av_shield_dir, "avshield")
+
+    print("DEBUG: Requête AV Stats")
+    try:
+        process = subprocess.run([av_bin, "stats"], capture_output=True, text=True, cwd=av_shield_dir)
+        if process.returncode != 0:
+            print(f"ERROR: Binaire stats a échoué: {process.stderr}")
+        return {"output": process.stdout, "error": process.stderr if process.returncode != 0 else None}
+    except Exception as e:
+        print(f"ERROR: Exception dans get_av_stats: {str(e)}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/av/history")
+async def get_av_history():
+    """Récupère l'historique des scans via SQLite"""
+    import sqlite3
+    import traceback
+    db_path = os.path.join(os.path.dirname(__file__), "av-shield", "database", "avshield.db")
+    
+    print(f"DEBUG: Requête AV History (DB: {db_path})")
+    if not os.path.exists(db_path):
+        print(f"WARNING: Base de données introuvable à {db_path}")
+        return []
+
+    try:
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM scans ORDER BY scan_date DESC LIMIT 50")
+        rows = cursor.fetchall()
+        
+        history = [dict(row) for row in rows]
+        conn.close()
+        print(f"DEBUG: {len(history)} entrées d'historique trouvées")
+        return history
+    except Exception as e:
+        print(f"ERROR: Exception dans get_av_history: {str(e)}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/av/quarantine")
+async def get_av_quarantine():
+    """Récupère la liste des fichiers en quarantaine"""
+    import sqlite3
+    import traceback
+    db_path = os.path.join(os.path.dirname(__file__), "av-shield", "database", "avshield.db")
+
+    print(f"DEBUG: Requête AV Quarantine (DB: {db_path})")
+    if not os.path.exists(db_path):
+        print(f"WARNING: Base de données introuvable à {db_path}")
+        return []
+
+    try:
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM quarantine ORDER BY quarantine_date DESC")
+        rows = cursor.fetchall()
+        
+        items = [dict(row) for row in rows]
+        conn.close()
+        print(f"DEBUG: {len(items)} fichiers en quarantaine trouvés")
+        return items
+    except Exception as e:
+        print(f"ERROR: Exception dans get_av_quarantine: {str(e)}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/")
 async def root():
