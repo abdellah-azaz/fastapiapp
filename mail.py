@@ -132,3 +132,182 @@ def send_password_email(receiver_email: str, fullname: str, encrypted_password: 
     except Exception as e:
         print(f"Erreur lors de l'envoi de l'email à {receiver_email}: {e}")
         return False
+
+def send_reset_code_email(receiver_email: str, fullname: str, reset_code: str):
+    """
+    Envoie un code de réinitialisation de mot de passe à 6 chiffres.
+    """
+    host = os.environ.get("SMTP_HOST", "mail.ahdigital.tech")
+    port = int(os.environ.get("SMTP_PORT", "465"))
+    user = os.environ.get("SMTP_USER", "")
+    password = os.environ.get("SMTP_PASS", "")
+
+    if not user or not password:
+        return False
+
+    message = MIMEMultipart("alternative")
+    message["From"] = f"Crypton Security <{user}>"
+    message["To"] = receiver_email
+    message["Subject"] = f"🔑 Votre code de réinitialisation : {reset_code}"
+    message["Date"] = formatdate(localtime=True)
+    message["Message-ID"] = make_msgid()
+
+    text_plain = f"Bonjour {fullname},\n\nVotre code de réinitialisation est : {reset_code}\nCe code expirera dans 10 minutes."
+    
+    html = f"""
+    <html>
+      <body style="font-family: Arial, sans-serif; color: #333;">
+        <div style="max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+          <h2 style="color: #2c3e50;">Réinitialisation de mot de passe</h2>
+          <p>Bonjour <strong>{fullname}</strong>,</p>
+          <p>Vous avez demandé la réinitialisation de votre mot de passe. Voici votre code de vérification :</p>
+          <div style="background: #f1f2f6; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #3498db; margin: 20px 0;">
+            {reset_code}
+          </div>
+          <p style="font-size: 12px; color: #7f8c8d;">Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.</p>
+        </div>
+      </body>
+    </html>
+    """
+
+    message.attach(MIMEText(text_plain, "plain", "utf-8"))
+    message.attach(MIMEText(html, "html", "utf-8"))
+
+    try:
+        if port == 465:
+            with smtplib.SMTP_SSL(host, port) as server:
+                server.login(user, password)
+                server.send_message(message)
+        else:
+            with smtplib.SMTP(host, port) as server:
+                server.starttls()
+                server.login(user, password)
+                server.send_message(message)
+        return True
+    except Exception as e:
+        print(f"Erreur envoi code reset: {e}")
+        return False
+
+def send_signup_code_email(receiver_email: str, fullname: str, signup_code: str):
+    """
+    Envoie un code de vérification pour l'inscription.
+    """
+    host = os.environ.get("SMTP_HOST", "mail.ahdigital.tech")
+    port = int(os.environ.get("SMTP_PORT", "465"))
+    user = os.environ.get("SMTP_USER", "")
+    password = os.environ.get("SMTP_PASS", "")
+
+    if not user or not password:
+        return False
+
+    message = MIMEMultipart("alternative")
+    message["From"] = f"Crypton Security <{user}>"
+    message["To"] = receiver_email
+    message["Subject"] = f"🔐 Votre code de vérification : {signup_code}"
+    message["Date"] = formatdate(localtime=True)
+    message["Message-ID"] = make_msgid()
+
+    text_plain = f"Bonjour {fullname},\n\nVotre code de vérification pour finaliser votre inscription est : {signup_code}\nCe code expirera dans 15 minutes."
+    
+    html = f"""
+    <html>
+      <body style="font-family: Arial, sans-serif; color: #333;">
+        <div style="max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+          <h2 style="color: #2c3e50;">Vérification de l'email</h2>
+          <p>Bonjour <strong>{fullname}</strong>,</p>
+          <p>Merci pour votre inscription. Voici votre code pour vérifier votre adresse email et finaliser la création de votre compte :</p>
+          <div style="background: #f1f2f6; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #3498db; margin: 20px 0;">
+            {signup_code}
+          </div>
+          <p style="font-size: 12px; color: #7f8c8d;">Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.</p>
+        </div>
+      </body>
+    </html>
+    """
+
+    message.attach(MIMEText(text_plain, "plain", "utf-8"))
+    message.attach(MIMEText(html, "html", "utf-8"))
+
+    try:
+        if port == 465:
+            with smtplib.SMTP_SSL(host, port) as server:
+                server.login(user, password)
+                server.send_message(message)
+        else:
+            with smtplib.SMTP(host, port) as server:
+                server.starttls()
+                server.login(user, password)
+                server.send_message(message)
+        return True
+    except Exception as e:
+        print(f"Erreur envoi code signup: {e}")
+        return False
+
+def send_admin_email(receiver_email: str, subject: str, body: str):
+    """
+    Envoie un email personnalisé depuis l'admin à un utilisateur.
+    L'émetteur est toujours SMTP_USER défini dans .env.
+    """
+    host = os.environ.get("SMTP_HOST", "mail.ahdigital.tech")
+    port = int(os.environ.get("SMTP_PORT", "465"))
+    user = os.environ.get("SMTP_USER", "")
+    password = os.environ.get("SMTP_PASS", "")
+
+    if not user or not password:
+        print("Erreur: SMTP_USER ou SMTP_PASS non configuré.")
+        return False
+
+    message = MIMEMultipart("alternative")
+    message["From"] = f"Crypton Admin <{user}>"
+    message["To"] = receiver_email
+    message["Subject"] = subject
+    message["Date"] = formatdate(localtime=True)
+    message["Message-ID"] = make_msgid()
+
+    # Texte brut
+    text_plain = body
+
+    # Version HTML
+    html_body = body.replace("\n", "<br>")
+    html = f"""
+    <html>
+      <body style="font-family: 'Segoe UI', Arial, sans-serif; color: #e2e8f0; background-color: #0f172a; margin: 0; padding: 0;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+          <div style="background: linear-gradient(135deg, #1e1b4b, #312e81); padding: 30px; border-radius: 16px; border: 1px solid rgba(139, 92, 246, 0.3);">
+            <div style="display: flex; align-items: center; margin-bottom: 24px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 16px;">
+              <h2 style="margin: 0; color: #a5b4fc; font-size: 20px;">🛡️ Crypton Administration</h2>
+            </div>
+            <div style="background: rgba(255,255,255,0.05); padding: 24px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); line-height: 1.7; font-size: 15px; color: #cbd5e1;">
+              {html_body}
+            </div>
+            <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.08); margin: 24px 0;">
+            <p style="font-size: 12px; color: #64748b; text-align: center; margin: 0;">
+              Message envoyé par l'administrateur de la plateforme Crypton Security.<br>
+              Cet email a été envoyé depuis {user}
+            </p>
+          </div>
+        </div>
+      </body>
+    </html>
+    """
+
+    message.attach(MIMEText(text_plain, "plain", "utf-8"))
+    message.attach(MIMEText(html, "html", "utf-8"))
+
+    try:
+        print(f"Envoi email admin à {receiver_email}...")
+        if port == 465:
+            with smtplib.SMTP_SSL(host, port) as server:
+                server.login(user, password)
+                server.send_message(message)
+        else:
+            with smtplib.SMTP(host, port) as server:
+                server.starttls()
+                server.login(user, password)
+                server.send_message(message)
+        print(f"Email admin envoyé avec succès à {receiver_email}")
+        return True
+    except Exception as e:
+        print(f"Erreur envoi email admin à {receiver_email}: {e}")
+        return False
+
