@@ -113,6 +113,26 @@ def init_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS flutter_noti (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                noti VARCHAR(255) NOT NULL,
+                owner_email VARCHAR(255) NOT NULL,
+                is_read BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS flutter_pass (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                password VARCHAR(255) NOT NULL,
+                owner_email VARCHAR(255) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS user_settings (
                 email VARCHAR(255) PRIMARY KEY,
@@ -229,6 +249,10 @@ class EncryptRequest(BaseModel):
     text: str
     owner_email: str
 
+class FlutterPasswords(BaseModel):
+    password: str
+    owner_email: str
+
 class DecryptRequest(BaseModel):
     blob: str
     owner_email: str
@@ -243,6 +267,10 @@ class MemberRequest(BaseModel):
     fullname: str
     mail: str
     owner_email: str
+
+class FlutterNoti(BaseModel):
+    noti :str
+    owner_email:str
 
 class AIExplainRequest(BaseModel):
     filename: str
@@ -437,6 +465,211 @@ async def add_member_endpoint(member: MemberRequest):
         )
     except mysql.connector.Error as err:
         raise HTTPException(status_code=500, detail=f"Erreur base de données: {err}")
+
+@app.post("/notifications", response_model=dict)
+async def add_noti(notification: FlutterNoti):
+    """
+    Ajoute une nouvelle notification dans la base de données.
+    """
+    try:
+        conn = mysql.connector.connect(**DB_CONFIG)
+        cursor = conn.cursor()
+        
+        query = "INSERT INTO flutter_noti (noti, owner_email) VALUES (%s, %s)"
+        cursor.execute(query, (notification.noti, notification.owner_email))
+        conn.commit()
+        
+        noti_id = cursor.lastrowid
+        
+        cursor.close()
+        conn.close()
+        
+        return {
+            "id": noti_id,
+            "noti": notification.noti,
+            "owner_email": notification.owner_email,
+            "message": "Notification ajoutée avec succès !"
+        }
+    except mysql.connector.Error as err:
+        raise HTTPException(status_code=500, detail=f"Erreur base de données: {err}")
+
+@app.post("/flutterPassword", response_model=dict)
+async def add_flutter_password(flutter_pass: FlutterPasswords):
+    """
+    Ajoute un mot de passe Flutter dans la base de données.
+    """
+    try:
+        # Connexion à la base de données
+        conn = mysql.connector.connect(**DB_CONFIG)
+        cursor = conn.cursor()
+        
+       
+        
+        # Insertion du nouveau mot de passe Flutter
+        query = "INSERT INTO flutter_pass (password, owner_email) VALUES (%s, %s)"
+        cursor.execute(query, (flutter_pass.password, flutter_pass.owner_email))
+        conn.commit()
+        
+        # Récupération de l'ID généré
+        flutter_id = cursor.lastrowid
+        
+        cursor.close()
+        conn.close()
+        
+        # Retourner une réponse de succès
+        return {
+            "id": flutter_id,
+            "message": "Mot de passe Flutter ajouté avec succès !",
+            "owner_email": flutter_pass.owner_email
+        }
+        
+    except mysql.connector.Error as err:
+        raise HTTPException(status_code=500, detail=f"Erreur base de données: {err}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
+
+
+@app.get("/flutterPassword/history/{owner_email}", response_model=dict)
+async def get_flutter_password_history(owner_email: str):
+    """
+    Récupère l'historique complet des mots de passe Flutter pour un email propriétaire donné.
+    """
+    try:
+        # Connexion à la base de données
+        conn = mysql.connector.connect(**DB_CONFIG)
+        cursor = conn.cursor(dictionary=True)
+        
+        # Requête pour récupérer tous les mots de passe d'un propriétaire
+        # Triés par date d'insertion (du plus récent au plus ancien)
+        query = """
+        SELECT id, password, owner_email, created_at 
+        FROM flutter_pass 
+        WHERE owner_email = %s 
+        ORDER BY created_at DESC
+        """
+        cursor.execute(query, (owner_email,))
+        
+        # Récupération de tous les résultats
+        passwords_history = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        # Vérifier si des mots de passe ont été trouvés
+        if not passwords_history:
+            return {
+                "owner_email": owner_email,
+                "message": "Aucun mot de passe trouvé pour cet email",
+                "count": 0,
+                "passwords": []
+            }
+        
+        # Retourner l'historique complet
+        return {
+            "owner_email": owner_email,
+            "message": f"{len(passwords_history)} mot(s) de passe trouvé(s)",
+            "count": len(passwords_history),
+            "passwords": passwords_history
+        }
+        
+    except mysql.connector.Error as err:
+        raise HTTPException(status_code=500, detail=f"Erreur base de données: {err}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
+
+
+@app.get("/notifications/{owner_email}", response_model=dict)
+async def get_notifications_by_owner(owner_email: str):
+    """
+    Récupère toutes les notifications pour un email propriétaire donné.
+    """
+    try:
+        # Connexion à la base de données
+        conn = mysql.connector.connect(**DB_CONFIG)
+        cursor = conn.cursor(dictionary=True)
+        
+        # Requête pour récupérer toutes les notifications d'un propriétaire
+        # Triées par date de création (du plus récent au plus ancien)
+        query = """
+        SELECT id, noti, owner_email, created_at 
+        FROM flutter_noti 
+        WHERE owner_email = %s 
+        ORDER BY created_at DESC
+        """
+        cursor.execute(query, (owner_email,))
+        
+        # Récupération de tous les résultats
+        notifications = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        # Vérifier si des notifications ont été trouvées
+        if not notifications:
+            return {
+                "owner_email": owner_email,
+                "message": "Aucune notification trouvée pour cet email",
+                "count": 0,
+                "notifications": []
+            }
+        
+        # Retourner toutes les notifications
+        return {
+            "owner_email": owner_email,
+            "message": f"{len(notifications)} notification(s) trouvée(s)",
+            "count": len(notifications),
+            "notifications": notifications
+        }
+        
+    except mysql.connector.Error as err:
+        raise HTTPException(status_code=500, detail=f"Erreur base de données: {err}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
+
+@app.delete("/flutterPassword/history/{owner_email}", response_model=dict)
+async def delete_flutter_password_history(owner_email: str):
+    """
+    Supprime tout l'historique des mots de passe Flutter pour un email propriétaire donné.
+    """
+    try:
+        # Connexion à la base de données
+        conn = mysql.connector.connect(**DB_CONFIG)
+        cursor = conn.cursor()
+        
+        # Vérifier d'abord si des enregistrements existent
+        check_query = "SELECT COUNT(*) FROM flutter_pass WHERE owner_email = %s"
+        cursor.execute(check_query, (owner_email,))
+        count = cursor.fetchone()[0]
+        
+        if count == 0:
+            cursor.close()
+            conn.close()
+            return {
+                "owner_email": owner_email,
+                "message": "Aucun mot de passe trouvé pour cet email",
+                "deleted_count": 0
+            }
+        
+        # Supprimer tous les mots de passe de l'utilisateur
+        delete_query = "DELETE FROM flutter_pass WHERE owner_email = %s"
+        cursor.execute(delete_query, (owner_email,))
+        conn.commit()
+        
+        deleted_count = cursor.rowcount
+        
+        cursor.close()
+        conn.close()
+        
+        return {
+            "owner_email": owner_email,
+            "message": f"Historique supprimé avec succès",
+            "deleted_count": deleted_count
+        }
+        
+    except mysql.connector.Error as err:
+        raise HTTPException(status_code=500, detail=f"Erreur base de données: {err}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
 
 @app.get("/members", response_model=MemberListResponse)
 async def list_members_endpoint(email: str):
@@ -1705,6 +1938,6 @@ async def explain_detection(req: AIExplainRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    host = os.environ.get("APP_HOST", "127.0.0.1")
+    host = os.environ.get("APP_HOST", "0.0.0.0")
     port = int(os.environ.get("APP_PORT", "8000"))
     uvicorn.run(app, host=host, port=port)

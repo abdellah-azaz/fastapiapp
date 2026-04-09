@@ -1,352 +1,352 @@
 [
   {
-    "filepath": "/tmp/password_manager_new.axaml",
-    "filename": "password_manager_new.axaml",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-03-26 19:37:40"
-  },
-  {
-    "filepath": "/tmp/ransomware_test.py",
-    "filename": "ransomware_test.py",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-03-26 18:53:02"
-  },
-  {
-    "filepath": "/tmp/ransomware_test.py",
-    "filename": "ransomware_test.py",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-03-26 18:52:07"
-  },
-  {
     "filepath": "/tmp/.ses",
     "filename": ".ses",
     "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-26 18:42:05"
+    "timestamp": "2026-04-08 12:49:09"
   },
   {
     "filepath": "/tmp/cv_debug.log",
     "filename": "cv_debug.log",
     "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-26 18:42:04"
+    "timestamp": "2026-04-08 12:49:08"
   },
   {
-    "filepath": "/tmp/ransomware_test.py",
-    "filename": "ransomware_test.py",
+    "filepath": "/tmp/kotlin-daemon.2026-04-07.22-09-07-982.00.log",
+    "filename": "kotlin-daemon.2026-04-07.22-09-07-982.00.log",
     "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-26 10:43:37"
+    "timestamp": "2026-04-07 22:09:09"
   },
   {
-    "filepath": "/home/abdellah/Downloads/decrypted_preinscription (2).pdf",
-    "filename": "decrypted_preinscription (2).pdf",
+    "filepath": "/tmp/kotlin-daemon.2026-04-07.22-09-07-982.00.log.lck",
+    "filename": "kotlin-daemon.2026-04-07.22-09-07-982.00.log.lck",
     "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-25 19:26:43"
+    "timestamp": "2026-04-07 22:09:08"
   },
   {
-    "filepath": "/tmp/renderer-516962.cpuprofile.json",
-    "filename": "renderer-516962.cpuprofile.json",
+    "filepath": "/tmp/kotlin-compiler-in-android-14372178154876020691.alive",
+    "filename": "kotlin-compiler-in-android-14372178154876020691.alive",
     "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-25 19:01:24"
+    "timestamp": "2026-04-07 22:09:08"
   },
   {
-    "filepath": "/tmp/ransomware_test.py",
-    "filename": "ransomware_test.py",
-    "result": "MALWARE",
+    "filepath": "/tmp/kotlin-daemon.2026-04-07.16-22-40-995.00.log",
+    "filename": "kotlin-daemon.2026-04-07.16-22-40-995.00.log",
+    "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-25 18:20:09"
+    "timestamp": "2026-04-07 16:22:42"
   },
   {
-    "filepath": "/home/abdellah/Downloads/preinscription (3).pdf",
-    "filename": "preinscription (3).pdf",
-    "result": "SUSPICIOUS",
+    "filepath": "/tmp/kotlin-daemon.2026-04-07.16-22-40-995.00.log.lck",
+    "filename": "kotlin-daemon.2026-04-07.16-22-40-995.00.log.lck",
+    "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-25 14:44:51"
+    "timestamp": "2026-04-07 16:22:41"
   },
   {
-    "filepath": "/home/abdellah/Downloads/preinscription (3).pdf",
-    "filename": "preinscription (3).pdf",
-    "result": "SUSPICIOUS",
+    "filepath": "/tmp/kotlin-compiler-in-android-11645818963475504177.alive",
+    "filename": "kotlin-compiler-in-android-11645818963475504177.alive",
+    "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-25 14:44:51"
+    "timestamp": "2026-04-07 16:22:41"
   },
   {
-    "filepath": "/home/abdellah/Downloads/WhatsApp Image 2026-03-25 at 07.59.08.jpeg",
-    "filename": "WhatsApp Image 2026-03-25 at 07.59.08.jpeg",
-    "result": "MALWARE",
+    "filepath": "/tmp/.com.microsoft.Edge.UCRynR",
+    "filename": ".com.microsoft.Edge.UCRynR",
+    "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-25 13:57:09"
+    "timestamp": "2026-04-07 16:12:25"
   },
   {
-    "filepath": "/home/abdellah/Downloads/WhatsApp Image 2026-03-25 at 07.59.08.jpeg",
-    "filename": "WhatsApp Image 2026-03-25 at 07.59.08.jpeg",
-    "result": "MALWARE",
+    "filepath": "/tmp/kotlin-daemon.2026-04-07.15-09-49-357.00.log",
+    "filename": "kotlin-daemon.2026-04-07.15-09-49-357.00.log",
+    "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-25 13:57:09"
+    "timestamp": "2026-04-07 15:09:50"
   },
   {
-    "filepath": "/home/abdellah/Downloads/WhatsApp Image 2026-03-25 at 07.59.08.jpeg",
-    "filename": "WhatsApp Image 2026-03-25 at 07.59.08.jpeg",
-    "result": "SUSPICIOUS",
+    "filepath": "/tmp/kotlin-daemon.2026-04-07.15-09-49-357.00.log.lck",
+    "filename": "kotlin-daemon.2026-04-07.15-09-49-357.00.log.lck",
+    "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-25 13:56:20"
+    "timestamp": "2026-04-07 15:09:50"
   },
   {
-    "filepath": "/home/abdellah/Downloads/WhatsApp Image 2026-03-25 at 07.59.08.jpeg",
-    "filename": "WhatsApp Image 2026-03-25 at 07.59.08.jpeg",
-    "result": "SUSPICIOUS",
+    "filepath": "/tmp/kotlin-compiler-in-gradle-2007494993804269332.alive",
+    "filename": "kotlin-compiler-in-gradle-2007494993804269332.alive",
+    "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-25 13:56:20"
+    "timestamp": "2026-04-07 15:09:49"
   },
   {
-    "filepath": "/tmp/ransomware_test.py",
-    "filename": "ransomware_test.py",
-    "result": "MALWARE",
+    "filepath": "/tmp/adb.1000.log",
+    "filename": "adb.1000.log",
+    "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-25 10:08:17"
-  },
-  {
-    "filepath": "/tmp/ransomware_test.py",
-    "filename": "ransomware_test.py",
-    "result": "MALWARE",
-    "threat": "None",
-    "timestamp": "2026-03-25 10:00:55"
+    "timestamp": "2026-04-07 14:00:35"
   },
   {
     "filepath": "/tmp/unleash-repo-schema-v1-codeium-language-server.json",
     "filename": "unleash-repo-schema-v1-codeium-language-server.json",
-    "result": "MALWARE",
+    "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-24 17:47:44"
+    "timestamp": "2026-04-06 21:28:42"
   },
   {
-    "filepath": "/tmp/unleash-repo-schema-v1-codeium-language-server.json",
-    "filename": "unleash-repo-schema-v1-codeium-language-server.json",
-    "result": "MALWARE",
+    "filepath": "/tmp/cv_debug.log",
+    "filename": "cv_debug.log",
+    "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-24 17:47:44"
+    "timestamp": "2026-04-06 21:28:04"
   },
   {
-    "filepath": "/tmp/unleash-repo-schema-v1-codeium-language-server.json",
-    "filename": "unleash-repo-schema-v1-codeium-language-server.json",
-    "result": "MALWARE",
+    "filepath": "/tmp/.ses",
+    "filename": ".ses",
+    "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-24 17:19:43"
+    "timestamp": "2026-04-06 21:27:40"
   },
   {
-    "filepath": "/tmp/unleash-repo-schema-v1-codeium-language-server.json",
-    "filename": "unleash-repo-schema-v1-codeium-language-server.json",
-    "result": "MALWARE",
+    "filepath": "/tmp/adb.1000.log",
+    "filename": "adb.1000.log",
+    "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-24 17:19:43"
+    "timestamp": "2026-04-06 21:27:05"
   },
   {
-    "filepath": "/tmp/unleash-repo-schema-v1-codeium-language-server.json",
-    "filename": "unleash-repo-schema-v1-codeium-language-server.json",
-    "result": "MALWARE",
+    "filepath": "/tmp/.com.microsoft.Edge.Ui3phA",
+    "filename": ".com.microsoft.Edge.Ui3phA",
+    "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-24 17:19:43"
+    "timestamp": "2026-04-06 16:10:23"
   },
   {
-    "filepath": "/tmp/ransomware_test.py",
-    "filename": "ransomware_test.py",
-    "result": "MALWARE",
+    "filepath": "/tmp/.com.microsoft.Edge.CSDZRC",
+    "filename": ".com.microsoft.Edge.CSDZRC",
+    "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-24 17:17:59"
+    "timestamp": "2026-04-06 16:10:20"
   },
   {
-    "filepath": "/tmp/ransomware_test.py",
-    "filename": "ransomware_test.py",
-    "result": "MALWARE",
+    "filepath": "/tmp/.com.microsoft.Edge.KB9tpO",
+    "filename": ".com.microsoft.Edge.KB9tpO",
+    "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-24 17:17:59"
+    "timestamp": "2026-04-06 16:10:02"
   },
   {
-    "filepath": "/tmp/ransomware_test.py",
-    "filename": "ransomware_test.py",
-    "result": "MALWARE",
+    "filepath": "/tmp/.com.microsoft.Edge.9WUkc5",
+    "filename": ".com.microsoft.Edge.9WUkc5",
+    "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-24 17:17:59"
+    "timestamp": "2026-04-06 16:10:00"
   },
   {
-    "filepath": "/tmp/ransomware_test.py",
-    "filename": "ransomware_test.py",
-    "result": "MALWARE",
+    "filepath": "/tmp/.com.microsoft.Edge.7FlyYV",
+    "filename": ".com.microsoft.Edge.7FlyYV",
+    "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-24 17:17:17"
+    "timestamp": "2026-04-06 16:09:01"
   },
   {
-    "filepath": "/tmp/ransomware_test.py",
-    "filename": "ransomware_test.py",
-    "result": "MALWARE",
+    "filepath": "/tmp/.com.microsoft.Edge.kkp6tt",
+    "filename": ".com.microsoft.Edge.kkp6tt",
+    "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-24 17:17:17"
+    "timestamp": "2026-04-06 16:08:10"
   },
   {
-    "filepath": "/tmp/ransomware_test.py",
-    "filename": "ransomware_test.py",
-    "result": "MALWARE",
+    "filepath": "/tmp/.com.microsoft.Edge.7HPonR",
+    "filename": ".com.microsoft.Edge.7HPonR",
+    "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-24 17:17:17"
+    "timestamp": "2026-04-06 16:07:50"
   },
   {
-    "filepath": "/tmp/unleash-repo-schema-v1-codeium-language-server.json",
-    "filename": "unleash-repo-schema-v1-codeium-language-server.json",
-    "result": "MALWARE",
+    "filepath": "/tmp/.com.microsoft.Edge.uR0lPR",
+    "filename": ".com.microsoft.Edge.uR0lPR",
+    "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-24 17:15:43"
+    "timestamp": "2026-04-06 16:07:45"
   },
   {
-    "filepath": "/tmp/unleash-repo-schema-v1-codeium-language-server.json",
-    "filename": "unleash-repo-schema-v1-codeium-language-server.json",
-    "result": "MALWARE",
+    "filepath": "/tmp/.com.microsoft.Edge.vsIQNE",
+    "filename": ".com.microsoft.Edge.vsIQNE",
+    "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-24 17:15:43"
+    "timestamp": "2026-04-06 16:07:44"
   },
   {
-    "filepath": "/tmp/unleash-repo-schema-v1-codeium-language-server.json",
-    "filename": "unleash-repo-schema-v1-codeium-language-server.json",
-    "result": "MALWARE",
+    "filepath": "/tmp/.com.microsoft.Edge.MZFgIG",
+    "filename": ".com.microsoft.Edge.MZFgIG",
+    "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-24 17:15:43"
+    "timestamp": "2026-04-06 16:07:37"
   },
   {
-    "filepath": "/tmp/ransomware_test.py",
-    "filename": "ransomware_test.py",
-    "result": "MALWARE",
+    "filepath": "/tmp/.com.microsoft.Edge.gN8fws",
+    "filename": ".com.microsoft.Edge.gN8fws",
+    "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-24 17:13:59"
+    "timestamp": "2026-04-06 16:07:32"
   },
   {
-    "filepath": "/tmp/ransomware_test.py",
-    "filename": "ransomware_test.py",
-    "result": "MALWARE",
+    "filepath": "/tmp/.com.microsoft.Edge.P5fbMc",
+    "filename": ".com.microsoft.Edge.P5fbMc",
+    "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-24 17:13:59"
+    "timestamp": "2026-04-06 16:07:29"
   },
   {
-    "filepath": "/tmp/ransomware_test.py",
-    "filename": "ransomware_test.py",
-    "result": "MALWARE",
+    "filepath": "/tmp/.com.microsoft.Edge.eFmyIp",
+    "filename": ".com.microsoft.Edge.eFmyIp",
+    "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-24 17:13:59"
+    "timestamp": "2026-04-06 16:07:24"
   },
   {
-    "filepath": "/tmp/ransomware_test.py",
-    "filename": "ransomware_test.py",
-    "result": "MALWARE",
+    "filepath": "/tmp/.com.microsoft.Edge.CG3nA7",
+    "filename": ".com.microsoft.Edge.CG3nA7",
+    "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-24 17:13:09"
+    "timestamp": "2026-04-06 16:06:35"
   },
   {
-    "filepath": "/tmp/ransomware_test.py",
-    "filename": "ransomware_test.py",
-    "result": "MALWARE",
+    "filepath": "/tmp/.com.microsoft.Edge.Jv4MmC",
+    "filename": ".com.microsoft.Edge.Jv4MmC",
+    "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-24 17:13:09"
+    "timestamp": "2026-04-06 16:06:31"
   },
   {
-    "filepath": "/tmp/ransomware_test.py",
-    "filename": "ransomware_test.py",
-    "result": "MALWARE",
+    "filepath": "/tmp/.com.microsoft.Edge.OhGVdL",
+    "filename": ".com.microsoft.Edge.OhGVdL",
+    "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-24 17:13:09"
+    "timestamp": "2026-04-06 16:06:29"
   },
   {
-    "filepath": "/tmp/unleash-repo-schema-v1-codeium-language-server.json",
-    "filename": "unleash-repo-schema-v1-codeium-language-server.json",
-    "result": "MALWARE",
+    "filepath": "/tmp/.com.microsoft.Edge.yunDcO",
+    "filename": ".com.microsoft.Edge.yunDcO",
+    "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-24 17:11:45"
+    "timestamp": "2026-04-06 16:06:05"
   },
   {
-    "filepath": "/tmp/unleash-repo-schema-v1-codeium-language-server.json",
-    "filename": "unleash-repo-schema-v1-codeium-language-server.json",
-    "result": "MALWARE",
+    "filepath": "/tmp/.com.microsoft.Edge.nX2V48",
+    "filename": ".com.microsoft.Edge.nX2V48",
+    "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-24 17:11:45"
+    "timestamp": "2026-04-06 16:05:56"
   },
   {
-    "filepath": "/tmp/unleash-repo-schema-v1-codeium-language-server.json",
-    "filename": "unleash-repo-schema-v1-codeium-language-server.json",
-    "result": "MALWARE",
+    "filepath": "/tmp/.com.microsoft.Edge.6HxDal",
+    "filename": ".com.microsoft.Edge.6HxDal",
+    "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-24 17:11:45"
+    "timestamp": "2026-04-06 16:05:19"
   },
   {
-    "filepath": "/tmp/unleash-repo-schema-v1-codeium-language-server.json",
-    "filename": "unleash-repo-schema-v1-codeium-language-server.json",
-    "result": "MALWARE",
+    "filepath": "/tmp/.com.microsoft.Edge.lC7y62",
+    "filename": ".com.microsoft.Edge.lC7y62",
+    "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-24 17:10:43"
+    "timestamp": "2026-04-06 16:05:17"
   },
   {
-    "filepath": "/tmp/unleash-repo-schema-v1-codeium-language-server.json",
-    "filename": "unleash-repo-schema-v1-codeium-language-server.json",
-    "result": "MALWARE",
+    "filepath": "/tmp/.com.microsoft.Edge.4aDu0r",
+    "filename": ".com.microsoft.Edge.4aDu0r",
+    "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-24 17:10:43"
+    "timestamp": "2026-04-06 16:04:51"
   },
   {
-    "filepath": "/tmp/unleash-repo-schema-v1-codeium-language-server.json",
-    "filename": "unleash-repo-schema-v1-codeium-language-server.json",
-    "result": "MALWARE",
+    "filepath": "/tmp/.com.microsoft.Edge.WX9NHA",
+    "filename": ".com.microsoft.Edge.WX9NHA",
+    "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-24 17:10:43"
+    "timestamp": "2026-04-06 16:04:39"
   },
   {
-    "filepath": "/tmp/unleash-repo-schema-v1-codeium-language-server.json",
-    "filename": "unleash-repo-schema-v1-codeium-language-server.json",
-    "result": "MALWARE",
+    "filepath": "/tmp/.com.microsoft.Edge.SbTbVD",
+    "filename": ".com.microsoft.Edge.SbTbVD",
+    "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-24 17:08:42"
+    "timestamp": "2026-04-06 16:04:26"
   },
   {
-    "filepath": "/tmp/unleash-repo-schema-v1-codeium-language-server.json",
-    "filename": "unleash-repo-schema-v1-codeium-language-server.json",
-    "result": "MALWARE",
+    "filepath": "/tmp/.com.microsoft.Edge.fQNHOo",
+    "filename": ".com.microsoft.Edge.fQNHOo",
+    "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-24 17:08:42"
+    "timestamp": "2026-04-06 16:04:07"
   },
   {
-    "filepath": "/tmp/unleash-repo-schema-v1-codeium-language-server.json",
-    "filename": "unleash-repo-schema-v1-codeium-language-server.json",
-    "result": "MALWARE",
+    "filepath": "/tmp/.com.microsoft.Edge.hlIVus",
+    "filename": ".com.microsoft.Edge.hlIVus",
+    "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-24 17:08:42"
+    "timestamp": "2026-04-06 16:04:03"
   },
   {
-    "filepath": "/tmp/unleash-repo-schema-v1-codeium-language-server.json",
-    "filename": "unleash-repo-schema-v1-codeium-language-server.json",
-    "result": "MALWARE",
+    "filepath": "/tmp/.com.microsoft.Edge.3dzq1u",
+    "filename": ".com.microsoft.Edge.3dzq1u",
+    "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-24 17:07:43"
+    "timestamp": "2026-04-06 16:03:50"
   },
   {
-    "filepath": "/tmp/unleash-repo-schema-v1-codeium-language-server.json",
-    "filename": "unleash-repo-schema-v1-codeium-language-server.json",
-    "result": "MALWARE",
+    "filepath": "/tmp/.com.microsoft.Edge.hAlVV6",
+    "filename": ".com.microsoft.Edge.hAlVV6",
+    "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-24 17:07:43"
+    "timestamp": "2026-04-06 16:03:44"
   },
   {
-    "filepath": "/tmp/unleash-repo-schema-v1-codeium-language-server.json",
-    "filename": "unleash-repo-schema-v1-codeium-language-server.json",
-    "result": "MALWARE",
+    "filepath": "/tmp/.com.microsoft.Edge.3xiyRi",
+    "filename": ".com.microsoft.Edge.3xiyRi",
+    "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-24 17:07:43"
+    "timestamp": "2026-04-06 16:03:40"
   },
   {
-    "filepath": "/tmp/unleash-repo-schema-v1-codeium-language-server.json",
-    "filename": "unleash-repo-schema-v1-codeium-language-server.json",
-    "result": "MALWARE",
+    "filepath": "/tmp/.com.microsoft.Edge.UPPOnV",
+    "filename": ".com.microsoft.Edge.UPPOnV",
+    "result": "CLEAN",
     "threat": "None",
-    "timestamp": "2026-03-24 17:06:42"
+    "timestamp": "2026-04-06 16:03:36"
+  },
+  {
+    "filepath": "/tmp/.com.microsoft.Edge.7V83VS",
+    "filename": ".com.microsoft.Edge.7V83VS",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-06 16:03:32"
+  },
+  {
+    "filepath": "/tmp/.com.microsoft.Edge.CMjt4x",
+    "filename": ".com.microsoft.Edge.CMjt4x",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-06 16:02:28"
+  },
+  {
+    "filepath": "/tmp/.com.microsoft.Edge.7cDw29",
+    "filename": ".com.microsoft.Edge.7cDw29",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-06 16:02:11"
+  },
+  {
+    "filepath": "/tmp/.com.microsoft.Edge.6idxKX",
+    "filename": ".com.microsoft.Edge.6idxKX",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-06 16:01:31"
   }
 ]
