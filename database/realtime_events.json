@@ -1,5 +1,152 @@
 [
   {
+    "filepath": "/home/abdellah/Downloads/linked.png",
+    "filename": "linked.png",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-13 16:29:17"
+  },
+  {
+    "filepath": "/home/abdellah/Downloads/Generated Image April 13, 2026 - 4_27PM.png",
+    "filename": "Generated Image April 13, 2026 - 4_27PM.png",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-13 16:28:25"
+  },
+  {
+    "filepath": "/home/abdellah/Downloads/Generated Image April 13, 2026 - 4_27PM.png",
+    "filename": "Generated Image April 13, 2026 - 4_27PM.png",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-13 16:28:24"
+  },
+  {
+    "filepath": "/home/abdellah/Downloads/prof.jpeg",
+    "filename": "prof.jpeg",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-13 16:25:30"
+  },
+  {
+    "filepath": "/home/abdellah/Downloads/WhatsApp Image 2026-04-13 at 16.24.30.jpeg",
+    "filename": "WhatsApp Image 2026-04-13 at 16.24.30.jpeg",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-13 16:25:04"
+  },
+  {
+    "filepath": "/home/abdellah/Downloads/WhatsApp Image 2026-04-13 at 16.24.30.jpeg",
+    "filename": "WhatsApp Image 2026-04-13 at 16.24.30.jpeg",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-13 16:25:03"
+  },
+  {
+    "filepath": "/tmp/.com.microsoft.Edge.PxXhNR",
+    "filename": ".com.microsoft.Edge.PxXhNR",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-13 16:07:10"
+  },
+  {
+    "filepath": "/tmp/.com.microsoft.Edge.UO8jun",
+    "filename": ".com.microsoft.Edge.UO8jun",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-13 15:58:57"
+  },
+  {
+    "filepath": "/tmp/.com.microsoft.Edge.0TTYAH",
+    "filename": ".com.microsoft.Edge.0TTYAH",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-13 15:55:39"
+  },
+  {
+    "filepath": "/tmp/.com.microsoft.Edge.VWZATD",
+    "filename": ".com.microsoft.Edge.VWZATD",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-13 15:49:52"
+  },
+  {
+    "filepath": "/tmp/.com.microsoft.Edge.ro9gWB",
+    "filename": ".com.microsoft.Edge.ro9gWB",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-13 15:48:29"
+  },
+  {
+    "filepath": "/tmp/.com.microsoft.Edge.FjgIcR",
+    "filename": ".com.microsoft.Edge.FjgIcR",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-13 15:43:19"
+  },
+  {
+    "filepath": "/tmp/.com.microsoft.Edge.14xAaK",
+    "filename": ".com.microsoft.Edge.14xAaK",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-13 15:39:52"
+  },
+  {
+    "filepath": "/tmp/.com.microsoft.Edge.0khIPJ",
+    "filename": ".com.microsoft.Edge.0khIPJ",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-13 15:33:36"
+  },
+  {
+    "filepath": "/tmp/.com.microsoft.Edge.f1i0lt",
+    "filename": ".com.microsoft.Edge.f1i0lt",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-13 15:23:34"
+  },
+  {
+    "filepath": "/tmp/.com.microsoft.Edge.7T0Zi0",
+    "filename": ".com.microsoft.Edge.7T0Zi0",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-13 15:20:37"
+  },
+  {
+    "filepath": "/tmp/kotlin-daemon.2026-04-13.14-50-28-937.00.log",
+    "filename": "kotlin-daemon.2026-04-13.14-50-28-937.00.log",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-13 14:50:30"
+  },
+  {
+    "filepath": "/tmp/kotlin-daemon.2026-04-13.14-50-28-937.00.log.lck",
+    "filename": "kotlin-daemon.2026-04-13.14-50-28-937.00.log.lck",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-13 14:50:29"
+  },
+  {
+    "filepath": "/tmp/kotlin-compiler-in-gradle-10633202024299934685.alive",
+    "filename": "kotlin-compiler-in-gradle-10633202024299934685.alive",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-13 14:50:29"
+  },
+  {
+    "filepath": "/tmp/adb.1000.log",
+    "filename": "adb.1000.log",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-13 13:29:49"
+  },
+  {
+    "filepath": "/tmp/ransomware_test.py",
+    "filename": "ransomware_test.py",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-09 15:13:19"
+  },
+  {
     "filepath": "/tmp/.ses",
     "filename": ".ses",
     "result": "CLEAN",
@@ -201,152 +348,5 @@
     "result": "CLEAN",
     "threat": "None",
     "timestamp": "2026-04-06 16:07:29"
-  },
-  {
-    "filepath": "/tmp/.com.microsoft.Edge.eFmyIp",
-    "filename": ".com.microsoft.Edge.eFmyIp",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-04-06 16:07:24"
-  },
-  {
-    "filepath": "/tmp/.com.microsoft.Edge.CG3nA7",
-    "filename": ".com.microsoft.Edge.CG3nA7",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-04-06 16:06:35"
-  },
-  {
-    "filepath": "/tmp/.com.microsoft.Edge.Jv4MmC",
-    "filename": ".com.microsoft.Edge.Jv4MmC",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-04-06 16:06:31"
-  },
-  {
-    "filepath": "/tmp/.com.microsoft.Edge.OhGVdL",
-    "filename": ".com.microsoft.Edge.OhGVdL",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-04-06 16:06:29"
-  },
-  {
-    "filepath": "/tmp/.com.microsoft.Edge.yunDcO",
-    "filename": ".com.microsoft.Edge.yunDcO",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-04-06 16:06:05"
-  },
-  {
-    "filepath": "/tmp/.com.microsoft.Edge.nX2V48",
-    "filename": ".com.microsoft.Edge.nX2V48",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-04-06 16:05:56"
-  },
-  {
-    "filepath": "/tmp/.com.microsoft.Edge.6HxDal",
-    "filename": ".com.microsoft.Edge.6HxDal",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-04-06 16:05:19"
-  },
-  {
-    "filepath": "/tmp/.com.microsoft.Edge.lC7y62",
-    "filename": ".com.microsoft.Edge.lC7y62",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-04-06 16:05:17"
-  },
-  {
-    "filepath": "/tmp/.com.microsoft.Edge.4aDu0r",
-    "filename": ".com.microsoft.Edge.4aDu0r",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-04-06 16:04:51"
-  },
-  {
-    "filepath": "/tmp/.com.microsoft.Edge.WX9NHA",
-    "filename": ".com.microsoft.Edge.WX9NHA",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-04-06 16:04:39"
-  },
-  {
-    "filepath": "/tmp/.com.microsoft.Edge.SbTbVD",
-    "filename": ".com.microsoft.Edge.SbTbVD",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-04-06 16:04:26"
-  },
-  {
-    "filepath": "/tmp/.com.microsoft.Edge.fQNHOo",
-    "filename": ".com.microsoft.Edge.fQNHOo",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-04-06 16:04:07"
-  },
-  {
-    "filepath": "/tmp/.com.microsoft.Edge.hlIVus",
-    "filename": ".com.microsoft.Edge.hlIVus",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-04-06 16:04:03"
-  },
-  {
-    "filepath": "/tmp/.com.microsoft.Edge.3dzq1u",
-    "filename": ".com.microsoft.Edge.3dzq1u",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-04-06 16:03:50"
-  },
-  {
-    "filepath": "/tmp/.com.microsoft.Edge.hAlVV6",
-    "filename": ".com.microsoft.Edge.hAlVV6",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-04-06 16:03:44"
-  },
-  {
-    "filepath": "/tmp/.com.microsoft.Edge.3xiyRi",
-    "filename": ".com.microsoft.Edge.3xiyRi",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-04-06 16:03:40"
-  },
-  {
-    "filepath": "/tmp/.com.microsoft.Edge.UPPOnV",
-    "filename": ".com.microsoft.Edge.UPPOnV",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-04-06 16:03:36"
-  },
-  {
-    "filepath": "/tmp/.com.microsoft.Edge.7V83VS",
-    "filename": ".com.microsoft.Edge.7V83VS",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-04-06 16:03:32"
-  },
-  {
-    "filepath": "/tmp/.com.microsoft.Edge.CMjt4x",
-    "filename": ".com.microsoft.Edge.CMjt4x",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-04-06 16:02:28"
-  },
-  {
-    "filepath": "/tmp/.com.microsoft.Edge.7cDw29",
-    "filename": ".com.microsoft.Edge.7cDw29",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-04-06 16:02:11"
-  },
-  {
-    "filepath": "/tmp/.com.microsoft.Edge.6idxKX",
-    "filename": ".com.microsoft.Edge.6idxKX",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-04-06 16:01:31"
   }
 ]

@@ -300,6 +300,13 @@ class ScannerAVRequest(BaseModel):
     report: bool = True
     html: bool = False
 
+class SSHScanRequest(BaseModel):
+    host: str
+    port: int = 22
+    username: str
+    password: str
+    scan_path: str = "/home"
+
 class SignupCodeRequest(BaseModel):
     fullname: str
     email: str
@@ -591,7 +598,7 @@ async def get_notifications_by_owner(owner_email: str):
         # Requête pour récupérer toutes les notifications d'un propriétaire
         # Triées par date de création (du plus récent au plus ancien)
         query = """
-        SELECT id, noti, owner_email, created_at 
+        SELECT id, noti, owner_email, is_read, created_at 
         FROM flutter_noti 
         WHERE owner_email = %s 
         ORDER BY created_at DESC
@@ -621,6 +628,34 @@ async def get_notifications_by_owner(owner_email: str):
             "notifications": notifications
         }
         
+    except mysql.connector.Error as err:
+        raise HTTPException(status_code=500, detail=f"Erreur base de données: {err}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
+
+@app.put("/notifications/{owner_email}/read", response_model=dict)
+async def mark_notifications_as_read(owner_email: str):
+    """
+    Marque toutes les notifications d'un propriétaire comme lues.
+    """
+    try:
+        conn = mysql.connector.connect(**DB_CONFIG)
+        cursor = conn.cursor()
+        
+        query = "UPDATE flutter_noti SET is_read = TRUE WHERE owner_email = %s"
+        cursor.execute(query, (owner_email,))
+        conn.commit()
+        
+        updated_count = cursor.rowcount
+        
+        cursor.close()
+        conn.close()
+        
+        return {
+            "owner_email": owner_email,
+            "message": f"{updated_count} notification(s) marquée(s) comme lue(s)",
+            "updated_count": updated_count
+        }
     except mysql.connector.Error as err:
         raise HTTPException(status_code=500, detail=f"Erreur base de données: {err}")
     except Exception as e:
@@ -1917,6 +1952,35 @@ async def admin_send_email(request: AdminEmailRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
+# --- Routes SSH Remote Scan ---
+
+@app.post("/ssh/test")
+async def ssh_test_connection(request: SSHScanRequest):
+    """Teste la connexion SSH vers un hôte distant."""
+    from modules.ssh_scanner import test_connection
+    result = test_connection(request.host, request.port, request.username, request.password)
+    if not result["success"]:
+        raise HTTPException(status_code=400, detail=result["message"])
+    return result
+
+@app.post("/ssh/scan")
+async def ssh_vulnerability_scan(request: SSHScanRequest):
+    """Lance un audit de vulnérabilités sur un hôte distant via SSH."""
+    from modules.ssh_scanner import run_remote_vulnerability_scan
+    result = run_remote_vulnerability_scan(request.host, request.port, request.username, request.password)
+    if not result["success"]:
+        raise HTTPException(status_code=400, detail=result["message"])
+    return result["data"]
+
+@app.post("/ssh/scanav")
+async def ssh_antivirus_scan(request: SSHScanRequest):
+    """Lance un scan antivirus (ClamAV) sur un hôte distant via SSH."""
+    from modules.ssh_scanner import run_remote_av_scan
+    result = run_remote_av_scan(request.host, request.port, request.username, request.password, request.scan_path)
+    if not result["success"]:
+        raise HTTPException(status_code=400, detail=result["message"])
+    return result["data"]
 
 @app.get("/")
 async def root():
