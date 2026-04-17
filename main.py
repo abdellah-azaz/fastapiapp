@@ -18,11 +18,14 @@ from passlib.context import CryptContext
 import uuid
 import shutil
 from pathlib import Path
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi import Request
 import io
 import random
 import time
 import signal
+import jwt
+import datetime
 
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -44,6 +47,8 @@ load_dotenv()
 # --- Configuration ---
 SECRET_KEY_HEX = os.environ.get("SECRET_KEY", "7072e9d2a23e8093d3b769ea8736a53697eb2f75a6435c43d81b95f27c706900")
 SECRET_KEY = bytes.fromhex(SECRET_KEY_HEX)
+JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "une_cle_secrete_temporaire_jwt")
+JWT_ALGORITHM = "HS256"
 
 # Nonce fixe (pour le développement/tests selon demande utilisateur)
 FIXED_NONCE_HEX = os.environ.get("FIXED_NONCE_HEX", "f1e2d3c4b5a69788796a5b4c")
@@ -243,6 +248,33 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.middleware("http")
+async def verify_jwt_middleware(request: Request, call_next):
+    # Les routes publiques
+    public_paths = [
+        "/auth", # tous les endpoints auth comme login, signup, code, etc.
+        "/docs",
+        "/openapi.json"
+    ]
+    
+    if any(request.url.path.startswith(p) for p in public_paths) or request.method == "OPTIONS":
+        return await call_next(request)
+        
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        return JSONResponse(status_code=401, content={"detail": "Non autorisé. Token manquant."})
+        
+    token = auth_header.split(" ")[1]
+    try:
+        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+        request.state.user_email = payload.get("sub")
+    except jwt.ExpiredSignatureError:
+        return JSONResponse(status_code=401, content={"detail": "Token expiré."})
+    except jwt.InvalidTokenError:
+        return JSONResponse(status_code=401, content={"detail": "Token invalide."})
+        
+    return await call_next(request)
 
 # --- Modèles de données ---
 class EncryptRequest(BaseModel):
@@ -1430,7 +1462,13 @@ async def login_endpoint(request: LoginRequest):
         if user and verify_password(request.password, user["password"]):
             # Ne pas renvoyer le mot de passe haché
             user.pop("password")
-            return {"success": True, "message": "Connexion réussie.", "user": user}
+            
+            # Generate JWT token
+            expire = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=24)
+            to_encode = {"sub": user["email"], "exp": expire}
+            token = jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
+            
+            return {"success": True, "message": "Connexion réussie.", "token": token, "user": user}
         else:
             return {"success": False, "message": "Email ou mot de passe incorrect."}
     except mysql.connector.Error as err:
