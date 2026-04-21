@@ -48,6 +48,7 @@ load_dotenv()
 SECRET_KEY_HEX = os.environ.get("SECRET_KEY", "7072e9d2a23e8093d3b769ea8736a53697eb2f75a6435c43d81b95f27c706900")
 SECRET_KEY = bytes.fromhex(SECRET_KEY_HEX)
 JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "une_cle_secrete_temporaire_jwt")
+JWT_REFRESH_SECRET_KEY = os.environ.get("JWT_REFRESH_SECRET_KEY", "une_cle_secrete_temporaire_jwt_refresh")
 JWT_ALGORITHM = "HS256"
 
 # Nonce fixe (pour le développement/tests selon demande utilisateur)
@@ -1463,16 +1464,62 @@ async def login_endpoint(request: LoginRequest):
             # Ne pas renvoyer le mot de passe haché
             user.pop("password")
             
-            # Generate JWT token
-            expire = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=24)
-            to_encode = {"sub": user["email"], "exp": expire}
-            token = jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
+            # Generate ACCESS TOKEN (24 hours)
+            access_expire = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=24)
+            access_to_encode = {"sub": user["email"], "exp": access_expire, "type": "access"}
+            access_token = jwt.encode(access_to_encode, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
             
-            return {"success": True, "message": "Connexion réussie.", "token": token, "user": user}
+            # Generate REFRESH TOKEN (7 days)
+            refresh_expire = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=7)
+            refresh_to_encode = {"sub": user["email"], "exp": refresh_expire, "type": "refresh"}
+            refresh_token = jwt.encode(refresh_to_encode, JWT_REFRESH_SECRET_KEY, algorithm=JWT_ALGORITHM)
+            
+            return {
+                "success": True, 
+                "message": "Connexion réussie.", 
+                "access_token": access_token,
+                "refresh_token": refresh_token,
+                "user": user
+            }
         else:
             return {"success": False, "message": "Email ou mot de passe incorrect."}
     except mysql.connector.Error as err:
         raise HTTPException(status_code=500, detail=f"Erreur BD: {err}")
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
+
+@app.post("/auth/refresh")
+async def refresh_token_endpoint(request: RefreshTokenRequest):
+    """Génère un nouveau access token à partir du refresh token."""
+    try:
+        refresh_token = request.refresh_token
+        
+        # Vérifier le refresh token
+        payload = jwt.decode(
+            refresh_token, 
+            JWT_REFRESH_SECRET_KEY, 
+            algorithms=[JWT_ALGORITHM]
+        )
+        
+        # Vérifier que c'est bien un refresh token
+        if payload.get("type") != "refresh":
+            return {"success": False, "message": "Token invalide"}
+        
+        # Générer nouveau access token
+        new_access_expire = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=24)
+        new_access_to_encode = {"sub": payload["sub"], "exp": new_access_expire, "type": "access"}
+        new_access_token = jwt.encode(new_access_to_encode, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
+        
+        return {
+            "success": True,
+            "access_token": new_access_token
+        }
+        
+    except jwt.ExpiredSignatureError:
+        return {"success": False, "message": "Refresh token expiré"}
+    except jwt.InvalidTokenError:
+        return {"success": False, "message": "Refresh token invalide"}
 
 @app.post("/auth/update-password")
 async def update_password_endpoint(request: UpdatePasswordRequest):
@@ -1534,7 +1581,6 @@ async def forgot_password_endpoint(request: ForgotPasswordRequest):
     try:
         conn = mysql.connector.connect(**DB_CONFIG)
         cursor = conn.cursor(dictionary=True)
-        
         cursor.execute("SELECT fullname FROM mainuser WHERE email = %s", (request.email,))
         user = cursor.fetchone()
         
@@ -1544,8 +1590,7 @@ async def forgot_password_endpoint(request: ForgotPasswordRequest):
             
         # Générer code 6 chiffres
         code = f"{random.randint(100000, 999999)}"
-        reset_codes[request.email] = {"code": code, "expires": time.time() + 600} # 10 mins
-        
+        reset_codes[request.email] = {"code": code, "expires": time.time() + 600}
         from mail import send_reset_code_email
         if send_reset_code_email(request.email, user['fullname'], code):
             return {"success": True, "message": "Code envoyé avec succès."}
@@ -2043,3 +2088,7 @@ if __name__ == "__main__":
     host = os.environ.get("APP_HOST", "0.0.0.0")
     port = int(os.environ.get("APP_PORT", "8000"))
     uvicorn.run(app, host=host, port=port)
+
+
+###########################################################
+
