@@ -1,5 +1,33 @@
 [
   {
+    "filepath": "/home/abdellah/Downloads/config_local (1).py",
+    "filename": "config_local (1).py",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-23 13:13:55"
+  },
+  {
+    "filepath": "/home/abdellah/Downloads/config_local (1).py",
+    "filename": "config_local (1).py",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-23 13:13:55"
+  },
+  {
+    "filepath": "/home/abdellah/Downloads/config_local.py",
+    "filename": "config_local.py",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-23 13:13:44"
+  },
+  {
+    "filepath": "/home/abdellah/Downloads/config_local.py",
+    "filename": "config_local.py",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-23 13:13:44"
+  },
+  {
     "filepath": "/tmp/ransomware_test.py",
     "filename": "ransomware_test.py",
     "result": "CLEAN",
@@ -320,33 +348,5 @@
     "result": "CLEAN",
     "threat": "None",
     "timestamp": "2026-04-16 11:02:28"
-  },
-  {
-    "filepath": "/tmp/.com.microsoft.Edge.cYW2gb",
-    "filename": ".com.microsoft.Edge.cYW2gb",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-04-16 11:02:25"
-  },
-  {
-    "filepath": "/tmp/.com.microsoft.Edge.LHGD6b",
-    "filename": ".com.microsoft.Edge.LHGD6b",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-04-16 11:02:23"
-  },
-  {
-    "filepath": "/tmp/.com.microsoft.Edge.ftm4gJ",
-    "filename": ".com.microsoft.Edge.ftm4gJ",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-04-16 11:02:22"
-  },
-  {
-    "filepath": "/tmp/.com.microsoft.Edge.ZuTzv0",
-    "filename": ".com.microsoft.Edge.ZuTzv0",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-04-16 11:02:00"
   }
 ]
