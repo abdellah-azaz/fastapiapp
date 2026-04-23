@@ -38,7 +38,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install fastapi groq cryptography pytest pytest-cov pytest-asyncio httpx mysql-connector-python passlib bcrypt
+          pip install fastapi groq cryptography qrcode pytest pytest-cov pytest-asyncio httpx mysql-connector-python passlib bcrypt
       
       - name: Wait for MySQL
         run: |
