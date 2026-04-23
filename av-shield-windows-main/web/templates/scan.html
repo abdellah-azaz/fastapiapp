@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AV-Shield — Scanner</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+    <div class="nav-brand">🛡️ AV-Shield</div>
+    <div class="nav-links">
+        <a href="/">Dashboard</a>
+        <a href="/scan" class="active">Scanner</a>
+        <a href="/quarantine">Quarantaine</a>
+        <a href="/reports-page">Rapports</a>
+    </div>
+</nav>
+
+<div class="container">
+
+    <h1 class="page-title">🔍 Scanner un Fichier ou Dossier</h1>
+
+    <!-- FORMULAIRE DE SCAN -->
+    <div class="scan-card">
+
+        <div class="form-group">
+            <label>📁 Chemin à scanner</label>
+            <input type="text" id="scan-path"
+                   placeholder="/home/fatima/Downloads"
+                   class="scan-input">
+        </div>
+
+        <div class="form-group">
+            <label>⚙️ Options</label>
+            <div class="options-grid">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="opt-auto">
+                    🔒 Quarantaine automatique
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="opt-report" checked>
+                    📄 Générer rapport JSON
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="opt-html">
+                    🌐 Générer rapport HTML
+                </label>
+            </div>
+        </div>
+
+        <button onclick="startScan()" class="btn-scan" id="scan-btn">
+            🔍 Lancer le Scan
+        </button>
+
+    </div>
+
+    <!-- PROGRESSION -->
+    <div id="progress-section" class="hidden">
+        <div class="progress-card">
+            <div class="progress-title">⏳ Scan en cours...</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <div id="progress-text">Initialisation...</div>
+        </div>
+    </div>
+
+    <!-- RÉSULTATS -->
+    <div id="results-section" class="hidden">
+
+        <h2 style="margin-bottom: 30px;">📊 Résultats du Scan</h2>
+
+        <!-- STATS RÉSULTATS -->
+        <div class="stats-grid" id="result-stats"></div>
+
+        <!-- TABLEAU FICHIERS -->
+        <div class="section">
+            <h3>📁 Fichiers Analysés</h3>
+            <table class="table" id="result-table">
+                <thead>
+                    <tr>
+                        <th>Fichier</th>
+                        <th>Résultat</th>
+                        <th>Menace</th>
+                        <th>Score</th>
+                        <th>Entropie</th>
+                        <th>IA</th>
+                    </tr>
+                </thead>
+                <tbody id="result-tbody">
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <!-- ERREUR -->
+    <div id="error-section" class="hidden">
+        <div class="error-card">
+            <div class="error-title">❌ Erreur</div>
+            <div id="error-message"></div>
+        </div>
+    </div>
+
+</div>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script>
+function parseAndDisplayAnalysis(text) {
+  const classMatch  = text.match(/🏷️ CLASSIFICATION[\s\S]*?[\r\n]+([\s\S]*?)(?=🎯|$)/);
+  const typeMatch   = text.match(/🎯 TYPE DE MENACE[\s\S]*?[\r\n]+([\s\S]*?)(?=⚠️|$)/);
+  const dangerMatch = text.match(/⚠️ POURQUOI[\s\S]*?[\r\n]+([\s\S]*?)(?=🛡️|$)/);
+  const recoMatch   = text.match(/RECOMMANDATIONS[^\n]*\n([\s\S]*?)(?=🔴|NIVEAU|$)/);
+  const riskMatch   = text.match(/🔴 NIVEAU DE RISQUE\s*:\s*(FAIBLE|MOYEN|ÉLEVÉ|ELEVE|CRITIQUE)/i);
+
+  if (classMatch) {
+    const classEl = document.getElementById('ai-classification');
+    if (classEl) classEl.innerHTML = classMatch[1].trim().replace(/\n/g,'<br>');
+  }
+  if (typeMatch)   document.getElementById('ai-type-text').innerHTML   = typeMatch[1].trim().replace(/\n/g,'<br>');
+  if (dangerMatch) document.getElementById('ai-danger-text').innerHTML = dangerMatch[1].trim().replace(/\n/g,'<br>');
+  if (recoMatch)   document.getElementById('ai-reco-text').innerHTML   = recoMatch[1].trim().replace(/\n/g,'<br>');
+
+  if (riskMatch) {
+    const level = riskMatch[1].toUpperCase();
+    const colors = {'FAIBLE':'#2ed573','MOYEN':'#ffa502','ÉLEVÉ':'#ff6b35','ELEVE':'#ff6b35','CRITIQUE':'#ff4757'};
+    const riskBadge = document.getElementById('ai-risk-badge');
+    riskBadge.style.background = colors[level] || '#ff4757';
+    riskBadge.style.color = 'white';
+    riskBadge.textContent = level;
+    document.getElementById('ai-section-risk').style.borderLeft = '4px solid ' + (colors[level]||'#ff4757');
+  }
+}
+
+function closeAI() {
+  const panel = document.getElementById('ai-panel');
+  panel.style.transform = 'translateX(100%)';
+  setTimeout(() => {
+    panel.style.display = 'none';
+    document.getElementById('ai-overlay').style.display = 'none';
+  }, 300);
+}
+
+function downloadAIPDF() {
+  const filename    = document.getElementById('ai-filename').textContent;
+  const sha256      = document.getElementById('ai-sha256').textContent;
+  const filesize    = document.getElementById('ai-filesize').textContent;
+  const probability = document.getElementById('ai-probability').textContent;
+  const duration    = document.getElementById('ai-duration').textContent;
+  const timeline    = document.getElementById('ai-timeline').innerHTML;
+  const layers      = document.getElementById('ai-layers').innerHTML;
+  const classif     = document.getElementById('ai-classification').innerHTML;
+  const type        = document.getElementById('ai-type-text').innerHTML;
+  const danger      = document.getElementById('ai-danger-text').innerHTML;
+  const reco        = document.getElementById('ai-reco-text').innerHTML;
+  const risk        = document.getElementById('ai-risk-badge').textContent;
+  const tiScore     = document.getElementById('ti-score')?.textContent || '';
+  const tiRep       = document.getElementById('ti-reputation')?.textContent || '';
+  const tiFamily    = document.getElementById('ti-family')?.textContent || '';
+  const tiMal       = document.getElementById('ti-malicious')?.textContent || '';
+  const tiSus       = document.getElementById('ti-suspicious')?.textContent || '';
+  const tiUnd       = document.getElementById('ti-undetected')?.textContent || '';
+  const tiDate      = document.getElementById('ti-firstseen')?.textContent || '';
+  const date        = new Date().toLocaleString('fr-FR');
+
+  const riskColor = risk === 'CRITIQUE' ? '#ff0000' : risk === 'ÉLEVÉ' ? '#ff4757' : risk === 'MOYEN' ? '#ffa502' : '#2ed573';
+
+  const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Rapport IA PDF — ${filename}</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: white; color: #1a1a1a; padding: 30px; max-width: 800px; margin: 0 auto; font-size: 13px; }
+    h1 { color: #2c3e50; border-bottom: 3px solid #667eea; padding-bottom: 10px; font-size: 20px; }
+    h2 { color: #34495e; font-size: 14px; margin-bottom: 5px; }
+    .header { background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 20px; }
+    .section { border-left: 4px solid #667eea; padding: 10px 15px; margin-bottom: 15px; background: #f8f9fa; border-radius: 0 8px 8px 0; }
+    .section.danger { border-color: #ff4757; }
+    .section.reco { border-color: #2ed573; }
+    .section.risk { border-color: ${riskColor}; }
+    .section.ti { border-color: #00cec9; }
+    .badge { display: inline-block; padding: 5px 15px; border-radius: 20px; color: white; background: ${riskColor}; font-weight: bold; font-size: 14px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+    .stat { text-align: center; background: #f8f9fa; border-radius: 8px; padding: 10px; }
+    .stat-value { font-size: 22px; font-weight: bold; color: #667eea; }
+    .stat-label { font-size: 11px; color: #888; }
+    .footer { text-align: center; color: #888; margin-top: 30px; font-size: 11px; border-top: 1px solid #eee; padding-top: 15px; }
+    code { background: #f1f1f1; padding: 2px 6px; border-radius: 4px; font-size: 11px; word-break: break-all; }
+  </style>
+</head>
+<body>
+  <h1>🛡️ Rapport Analyse IA — AV-Shield</h1>
+  <div class="header">
+    <p><b>Fichier :</b> ${filename} &nbsp;|&nbsp; <b>Date :</b> ${date}</p>
+    <p><b>SHA256 :</b> <code>${sha256}</code></p>
+  </div>
+
+  <div class="grid">
+    <div class="stat"><div class="stat-value">${probability}</div><div class="stat-label">Probabilité menace</div></div>
+    <div class="stat"><div class="stat-value">${duration}</div><div class="stat-label">Durée analyse IA</div></div>
+    <div class="stat"><div class="stat-value">${filesize}</div><div class="stat-label">Taille fichier</div></div>
+  </div>
+
+  <div class="section">
+    <h2>⏱️ Pipeline d'Analyse</h2>
+    <div style="line-height:1.8;">${timeline.replace(/<[^>]+>/g, '')}</div>
+  </div>
+
+  <div class="section">
+    <h2>🔍 Couches de Détection</h2>
+    <div style="line-height:1.8;">${layers.replace(/<[^>]+>/g, '')}</div>
+  </div>
+
+  <div class="section">
+    <h2>🏷️ Classification</h2>
+    <div>${classif.replace(/<[^>]+>/g, '')}</div>
+  </div>
+
+  <div class="section">
+    <h2>🎯 Type de Menace</h2>
+    <div>${type.replace(/<[^>]+>/g, '')}</div>
+  </div>
+
+  <div class="section danger">
+    <h2>⚠️ Pourquoi c'est Dangereux</h2>
+    <div>${danger.replace(/<[^>]+>/g, '')}</div>
+  </div>
+
+  <div class="section reco">
+    <h2>🛡️ Recommandations</h2>
+    <div>${reco.replace(/<[^>]+>/g, '')}</div>
+  </div>
+
+  <div class="section risk">
+    <h2>🔴 Niveau de Risque</h2>
+    <span class="badge">${risk}</span>
+  </div>
+
+  <div class="section ti">
+    <h2>🌐 Threat Intelligence — VirusTotal</h2>
+    ${tiScore ? `<p><b>Score :</b> ${tiScore} — ${tiRep}</p><p><b>Famille :</b> ${tiFamily}</p><p>🔴 Malveillant : ${tiMal} | 🟡 Suspect : ${tiSus} | ✅ Non détecté : ${tiUnd}</p><p>📅 Première détection : ${tiDate}</p>` : '<p>Hash inconnu de VirusTotal</p>'}
+  </div>
+
+  <div class="footer">Généré par AV-Shield — Système de détection multi-couches avec IA</div>
+</body>
+</html>`;
+
+  // Envoyer à Flask pour conversion PDF
+  const btn = event.target;
+  btn.textContent = '⏳ Génération...';
+  btn.disabled = true;
+
+  fetch('/api/generate-pdf', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({html: html})
+  })
+  .then(r => r.blob())
+  .then(blob => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'rapport_ia_' + filename + '_' + new Date().toISOString().slice(0,10) + '.pdf';
+    a.click();
+    URL.revokeObjectURL(url);
+    btn.textContent = '📄 Télécharger PDF';
+    btn.disabled = false;
+  })
+  .catch(err => {
+    alert('Erreur génération PDF: ' + err);
+    btn.textContent = '📄 Télécharger PDF';
+    btn.disabled = false;
+  });
+}
+
+function downloadAIReport() {
+  const filename = document.getElementById('ai-filename').textContent;
+  const sha256   = document.getElementById('ai-sha256').textContent;
+  const timeline = document.getElementById('ai-timeline').innerHTML;
+  const layers   = document.getElementById('ai-layers').innerHTML;
+  const type     = document.getElementById('ai-type-text').innerHTML;
+  const danger   = document.getElementById('ai-danger-text').innerHTML;
+  const reco     = document.getElementById('ai-reco-text').innerHTML;
+  const risk     = document.getElementById('ai-risk-badge').textContent;
+  const riskColor = document.getElementById('ai-risk-badge').style.background;
+
+  const probability = document.getElementById('ai-probability').textContent;
+  const duration    = document.getElementById('ai-duration').textContent;
+  const filesize    = document.getElementById('ai-filesize').textContent;
+
+  // Threat Intelligence
+  const tiScore     = document.getElementById('ti-score')?.textContent || '';
+  const tiRep       = document.getElementById('ti-reputation')?.textContent || '';
+  const tiFamily    = document.getElementById('ti-family')?.textContent || '';
+  const tiMal       = document.getElementById('ti-malicious')?.textContent || '';
+  const tiSus       = document.getElementById('ti-suspicious')?.textContent || '';
+  const tiUnd       = document.getElementById('ti-undetected')?.textContent || '';
+  const tiDate      = document.getElementById('ti-firstseen')?.textContent || '';
+  const tiNotFound  = document.getElementById('ti-notfound')?.textContent || '';
+  const tiHtml = tiScore ? `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+      <span style="font-size:1.8em;font-weight:bold;color:#ff4757;">${tiScore}</span>
+      <div><div style="font-weight:bold;color:#ff4757;">${tiRep}</div>
+      <div style="color:#888;font-size:0.85em;">${tiFamily}</div></div>
+    </div>
+    <div style="background:#0d0d1a;border-radius:6px;padding:10px;font-size:0.85em;">
+      <div>🔴 Malveillant : <b>${tiMal}</b></div>
+      <div>🟡 Suspect : <b>${tiSus}</b></div>
+      <div>✅ Non détecté : <b>${tiUnd}</b></div>
+      <div>📅 1ère détection : <b>${tiDate}</b></div>
+    </div>` : `<div style="color:#888;">${tiNotFound || '❓ Hash inconnu de VirusTotal'}</div>`;
+
+  const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Rapport IA — ${filename}</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #0d0d1a; color: #e0e0e0; padding: 30px; max-width: 800px; margin: 0 auto; }
+    h1 { color: #667eea; border-bottom: 2px solid #667eea; padding-bottom: 10px; }
+    .section { background: #1a1a2e; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+    .section-title { font-weight: bold; margin-bottom: 12px; font-size: 1.1em; }
+    .badge { display: inline-block; padding: 6px 20px; border-radius: 20px; font-weight: bold; color: white; background: ${riskColor}; }
+    code { color: #00d2ff; word-break: break-all; font-size: 0.85em; }
+    .footer { text-align: center; color: #666; margin-top: 30px; font-size: 0.85em; }
+  </style>
+</head>
+<body>
+  <h1>🤖 Rapport Analyse IA — AV-Shield</h1>
+  <p><b>Fichier :</b> ${filename} &nbsp;|&nbsp; <b>Date :</b> ${new Date().toLocaleString('fr-FR')}</p>
+  
+  <div class="section" style="display:flex;gap:20px;">
+    <div style="flex:1;text-align:center;"><div style="color:#ff6b35;font-weight:bold;">🎯 Probabilité</div><div style="font-size:2em;font-weight:bold;color:#ff6b35;">${probability}</div></div>
+    <div style="flex:1;text-align:center;"><div style="color:#74b9ff;font-weight:bold;">⚡ Durée IA</div><div style="font-size:2em;font-weight:bold;color:#74b9ff;">${duration}</div></div>
+    <div style="flex:1;text-align:center;"><div style="color:#a29bfe;font-weight:bold;">📦 Taille</div><div style="font-size:2em;font-weight:bold;color:#a29bfe;">${filesize}</div></div>
+  </div>
+  <div class="section">
+    <div class="section-title" style="color:#fd79a8;">🏷️ CLASSIFICATION</div>
+    ${document.getElementById('ai-classification').innerHTML}
+  </div>
+  <div class="section">
+    <div class="section-title" style="color:#a0a0a0;">🔑 SHA256</div>
+    <code>${sha256}</code>
+  </div>
+  
+  <div class="section">
+    <div class="section-title" style="color:#00d2ff;">⏱️ PIPELINE D'ANALYSE</div>
+    ${timeline}
+  </div>
+  
+  <div class="section">
+    <div class="section-title" style="color:#ffa502;">🔍 COUCHES DE DÉTECTION</div>
+    ${layers}
+  </div>
+  
+  <div class="section">
+    <div class="section-title" style="color:#667eea;">🎯 TYPE DE MENACE</div>
+    ${type}
+  </div>
+  
+  <div class="section">
+    <div class="section-title" style="color:#ff4757;">⚠️ POURQUOI C'EST DANGEREUX</div>
+    ${danger}
+  </div>
+  
+  <div class="section">
+    <div class="section-title" style="color:#2ed573;">🛡️ RECOMMANDATIONS</div>
+    ${reco}
+  </div>
+  
+  <div class="section">
+    <div class="section-title">🔴 NIVEAU DE RISQUE</div>
+    <span class="badge">${risk}</span>
+  </div>
+
+  <div class="section">
+    <div class="section-title" style="color:#00cec9;">🌐 THREAT INTELLIGENCE — VirusTotal</div>
+    ${tiHtml}
+  </div>
+  
+  <div class="footer">Généré par AV-Shield — Système de détection multi-couches avec IA</div>
+</body>
+</html>`;
+
+  const blob = new Blob([html], {type: 'text/html'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'rapport_ia_' + filename + '_' + new Date().toISOString().slice(0,10) + '.html';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function copyAnalysis() {
+  const filename    = document.getElementById('ai-filename').textContent;
+  const sha256      = document.getElementById('ai-sha256').textContent;
+  const filesize    = document.getElementById('ai-filesize').textContent;
+  const probability = document.getElementById('ai-probability').textContent;
+  const duration    = document.getElementById('ai-duration').textContent;
+  const timeline    = document.getElementById('ai-timeline').innerText;
+  const layers      = document.getElementById('ai-layers').innerText;
+  const classif     = document.getElementById('ai-classification').innerText;
+  const type        = document.getElementById('ai-type-text').innerText;
+  const danger      = document.getElementById('ai-danger-text').innerText;
+  const reco        = document.getElementById('ai-reco-text').innerText;
+  const risk        = document.getElementById('ai-risk-badge').textContent;
+  const date        = new Date().toLocaleString('fr-FR');
+
+  const text = `========================================
+RAPPORT ANALYSE IA — AV-Shield
+========================================
+Fichier  : ${filename}
+Date     : ${date}
+SHA256   : ${sha256}
+Taille   : ${filesize}
+Probabilité de menace : ${probability}
+Durée analyse IA      : ${duration}
+
+PIPELINE D'ANALYSE
+------------------
+${timeline}
+
+COUCHES DE DÉTECTION
+--------------------
+${layers}
+
+CLASSIFICATION
+--------------
+${classif}
+
+TYPE DE MENACE
+--------------
+${type}
+
+POURQUOI C'EST DANGEREUX
+------------------------
+${danger}
+
+RECOMMANDATIONS
+---------------
+${reco}
+
+NIVEAU DE RISQUE : ${risk}
+========================================
+Généré par AV-Shield`;
+
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('[onclick="copyAnalysis()"]');
+    btn.textContent = '✅ Copié !';
+    setTimeout(() => btn.textContent = '📋 Copier l\'analyse', 2000);
+  });
+}
+
+</script>
+<script>
+function startScan() {
+    const path    = document.getElementById('scan-path').value.trim();
+    const auto    = document.getElementById('opt-auto').checked;
+    const report  = document.getElementById('opt-report').checked;
+    const html    = document.getElementById('opt-html').checked;
+
+    if (!path) {
+        alert('⚠️ Entrez un chemin à scanner !');
+        return;
+    }
+
+    /* Masquer résultats précédents */
+    document.getElementById('results-section').classList.add('hidden');
+    document.getElementById('error-section').classList.add('hidden');
+
+    /* Afficher progression */
+    document.getElementById('progress-section').classList.remove('hidden');
+    document.getElementById('scan-btn').disabled = true;
+    document.getElementById('scan-btn').textContent = '⏳ Scan en cours...';
+
+    /* Animation barre progression */
+    let progress = 0;
+    const interval = setInterval(() => {
+        progress += 2;
+        if (progress > 90) progress = 90;
+        document.getElementById('progress-fill').style.width = progress + '%';
+    }, 200);
+
+    /* Appel API */
+    fetch('/api/scan', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            path   : path,
+            auto   : auto,
+            report : report,
+            html   : html
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        clearInterval(interval);
+        document.getElementById('progress-fill').style.width = '100%';
+        document.getElementById('progress-section').classList.add('hidden');
+        document.getElementById('scan-btn').disabled = false;
+        document.getElementById('scan-btn').textContent = '🔍 Lancer le Scan';
+
+        if (data.error) {
+            document.getElementById('error-message').textContent = data.error;
+            document.getElementById('error-section').classList.remove('hidden');
+        } else {
+            showResults(data);
+        }
+    })
+    .catch(err => {
+        clearInterval(interval);
+        document.getElementById('progress-section').classList.add('hidden');
+        document.getElementById('scan-btn').disabled = false;
+        document.getElementById('scan-btn').textContent = '🔍 Lancer le Scan';
+        document.getElementById('error-message').textContent = err.toString();
+        document.getElementById('error-section').classList.remove('hidden');
+    });
+}
+
+function showResults(data) {
+  if (!data.report && data.report_json_file) {
+    fetch('/reports/download/' + data.report_json_file)
+      .then(r => r.json())
+      .then(reportData => { data.report = reportData; renderResults(data); })
+      .catch(() => renderResults(data));
+    return;
+  }
+  renderResults(data);
+}
+function renderResults(data) {
+  const report = data.report;
+ 
+  let total = 0, clean = 0, suspicious = 0, malware = 0;
+  let files = [];
+
+  // Priorité : lire depuis report.statistics
+  if (report && report.statistics) {
+    total      = report.statistics.total_files      || 0;
+    clean      = report.statistics.clean_files      || 0;
+    suspicious = report.statistics.suspicious_files || 0;
+    malware    = report.statistics.malware_files    || 0;
+  } else {
+    // Fallback regex sur stdout
+    const raw = ((data.output || "") + "\n" + (data.errors || ""))
+                .replace(/\u001b\[[0-9;]*m/g, "");
+    total      = (raw.match(/Total\s*:\s*(\d+)/)    || [,0])[1] | 0;
+    clean      = (raw.match(/Propres\s*:\s*(\d+)/)  || [,0])[1] | 0;
+    suspicious = (raw.match(/Suspects\s*:\s*(\d+)/) || [,0])[1] | 0;
+    malware    = (raw.match(/Malwares\s*:\s*(\d+)/) || [,0])[1] | 0;
+  }
+
+  // Lire les fichiers
+  if (report && report.files && Array.isArray(report.files)) {
+    files = report.files;
+  } else if (data.files && Array.isArray(data.files)) {
+    files = data.files;
+  }
+
+  // Afficher les cartes (APRÈS avoir les bonnes valeurs)
+  document.getElementById('result-stats').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-icon">📁</div>
+      <div class="stat-number">${total}</div>
+      <div class="stat-label">Total</div>
+    </div>
+    <div class="stat-card clean">
+      <div class="stat-icon">✅</div>
+      <div class="stat-number">${clean}</div>
+      <div class="stat-label">Propres</div>
+    </div>
+    <div class="stat-card warning">
+      <div class="stat-icon">⚠️</div>
+      <div class="stat-number">${suspicious}</div>
+      <div class="stat-label">Suspects</div>
+    </div>
+    <div class="stat-card danger">
+      <div class="stat-icon">☠️</div>
+      <div class="stat-number">${malware}</div>
+      <div class="stat-label">Malwares</div>
+    </div>
+  `;
+
+  // Remplir le tableau
+  const tbody = document.getElementById("result-tbody");
+  tbody.innerHTML = "";
+
+  if (files.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="empty">Aucun détail disponible</td></tr>`;
+  } else {
+    const displayFiles = files.slice(0, 500);
+  if (files.length > 500) {
+    const info = document.createElement("tr");
+    info.innerHTML = `<td colspan="6" style="text-align:center;color:var(--yellow);padding:10px;">Affichage des 500 premiers fichiers sur ${files.length} — consultez le rapport HTML pour tous les détails</td>`;
+    tbody.appendChild(info);
+  }
+  displayFiles.forEach(f => {
+      const resultClass = f.result === 'MALWARE'    ? 'danger'  :
+                          f.result === 'SUSPICIOUS'  ? 'warning' : 'clean';
+      const tr = document.createElement("tr");
+      const aiBtn = (f.result === 'MALWARE' || f.result === 'SUSPICIOUS' || f.result === 'CLEAN')
+        ? `<button onclick="analyzeWithAI(this)" 
+            data-filename="${f.filename || ''}"
+            data-filepath="${f.filepath || ''}"
+            data-result="${f.result || ''}"
+            data-threat="${f.threat || ''}"
+            data-score="${f.heuristic_score || 0}"
+            data-entropy="${f.entropy || 0}"
+            data-sha256="${f.sha256 || ''}" data-filesize="${f.filesize || 0}"
+            data-quarantined="${f.quarantined || false}"
+            style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;border:none;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:0.8em;">🤖 IA</button>`
+        : '';
+      tr.innerHTML = `
+        <td><code>${f.filename || "-"}</code></td>
+        <td class="${resultClass}">${f.result || "-"}</td>
+        <td>${f.threat || "-"}</td>
+        <td>${f.heuristic_score ?? "-"}</td>
+        <td>${f.entropy ?? "-"}</td>
+        <td>${aiBtn}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  document.getElementById('results-section').classList.remove('hidden');
+}  
+       
+
+// ============ ANALYSE IA ============
+function analyzeWithAI(btn) {
+   const filename   = btn.dataset.filename;
+  const filepath   = btn.dataset.filepath;
+  const result     = btn.dataset.result;
+  const threat     = btn.dataset.threat;
+  const score      = btn.dataset.score;
+  const entropy    = btn.dataset.entropy;
+  const sha256     = btn.dataset.sha256;
+  const filesize   = btn.dataset.filesize;
+  const quarantined = btn.dataset.quarantined === 'true';
+
+  // SHA256
+  // Calculer probabilité de menace
+  const prob = Math.min(99, Math.round(
+    (Math.min(parseInt(score)||0, 100) * 0.60) +
+    (Math.min(parseFloat(entropy)||0, 8) / 8 * 20) +
+    (threat && threat !== 'None' && threat !== '' ? 20 : 0)
+  ));
+  const probEl = document.getElementById('ai-probability');
+  if (probEl) {
+    probEl.textContent = prob + '%';
+    probEl.style.color = prob >= 70 ? '#ff4757' : prob >= 40 ? '#ffa502' : '#2ed573';
+  }
+  // Barre de progression probabilité
+  const probBar = document.getElementById('ai-prob-bar');
+  if (probBar) {
+    probBar.style.width = prob + '%';
+    probBar.style.background = prob >= 70 ? '#ff4757' : prob >= 40 ? '#ffa502' : '#2ed573';
+  }
+
+  const sha256El = document.getElementById('ai-sha256');
+  if (sha256El) sha256El.textContent = sha256 || 'N/A';
+  const sizeEl = document.getElementById('ai-filesize');
+  if (sizeEl) {
+    const fs = parseInt(filesize);
+    sizeEl.textContent = fs < 1024 ? fs+' B' : fs < 1048576 ? (fs/1024).toFixed(1)+' KB' : (fs/1048576).toFixed(1)+' MB';
+  }
+
+  // Timeline
+  const clamav = (threat && threat !== 'None' && threat !== '') ? '✅' : '❌';
+  const heur   = parseInt(score) >= 40 ? '✅' : '❌';
+  const entr   = parseFloat(entropy) >= 7.0 ? '✅' : '❌';
+  const sha    = (threat && threat !== 'None') ? '✅' : '❌';
+  const timelineEl = document.getElementById('ai-timeline');
+  if (timelineEl) timelineEl.innerHTML = `
+    <div>✅ Calcul SHA256 — <b>${sha256 ? sha256.substring(0,16)+'...' : 'N/A'}</b></div>
+    <div>${clamav} Analyse ClamAV — ${clamav==='✅' ? '<b>'+threat+'</b> (signature connue)' : 'aucune signature détectée <i style="color:#888">(menace inconnue par base)</i>'}</div>
+    <div>${heur} Analyse Heuristique — score: <b>${score} / 100</b> ${parseInt(score)>=40 ? '<i style="color:#ffa502">(seuil dépassé)</i>' : '<i style="color:#2ed573">(sous le seuil)</i>'}</div>
+    <div>${entr} Analyse Entropie — <b>${entropy} / 8</b> ${parseFloat(entropy)>=7 ? '<i style="color:#ffa502">(élevée — possible obfuscation)</i>' : '<i style="color:#2ed573">(normale)</i>'}</div>
+    <div>✅ Analyse IA — <b>générée avec succès</b></div>
+  `;
+
+  // Couches déclenchées
+  const layersEl = document.getElementById('ai-layers');
+  if (layersEl) layersEl.innerHTML = `
+    <div>${clamav} ClamAV ${clamav==='✅'?'— déclenché':'— non déclenché'}</div>
+    <div>${heur} Heuristique ${heur==='✅'?'— déclenché ('+score+'/100)':'— non déclenché'}</div>
+    <div>${entr} Entropie ${entr==='✅'?'— déclenché ('+entropy+')':'— normale ('+entropy+')'}</div>
+    <div>✅ IA — analyse en cours</div>
+  `;
+
+  // Badge résultat
+  const badge = document.getElementById('ai-result-badge');
+  if (result === 'MALWARE') {
+    badge.style.background = '#ff4757'; badge.style.color = 'white';
+    badge.textContent = '☠️ MALWARE DÉTECTÉ';
+  } else if (result === 'SUSPICIOUS') {
+    badge.style.background = '#ffa502'; badge.style.color = 'white';
+    badge.textContent = '⚠️ FICHIER SUSPECT';
+  } else {
+    badge.style.background = '#2ed573'; badge.style.color = 'white';
+    badge.textContent = '✅ FICHIER PROPRE';
+  }
+
+  document.getElementById('ai-filename').textContent = filename;
+  document.getElementById('ai-overlay').style.display = 'block';
+  const panel = document.getElementById('ai-panel');
+  panel.style.display = 'block';
+  setTimeout(() => panel.style.transform = 'translateX(0)', 10);
+  document.getElementById('ai-loading').style.display = 'block';
+  document.getElementById('ai-result-sections').style.display = 'none';
+  const scanStart = Date.now();
+
+  fetch('/api/ai-analyze', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({filename, result, threat_name: threat, heuristic_score: score, entropy})
+  })
+  .then(r => r.json())
+  .then(data => {
+    const scanDuration = ((Date.now() - scanStart) / 1000).toFixed(2);
+    const durEl = document.getElementById('ai-duration');
+    if (durEl) durEl.textContent = scanDuration + ' sec';
+    document.getElementById('ai-loading').style.display = 'none';
+    if (data.success) {
+      parseAndDisplayAnalysis(data.analysis);
+
+  // Threat Intelligence VirusTotal
+  const tiLoading = document.getElementById('ti-loading');
+  const tiResult  = document.getElementById('ti-result');
+  const tiNotFound = document.getElementById('ti-notfound');
+  if (tiLoading) tiLoading.style.display = 'block';
+  if (tiResult)  tiResult.style.display  = 'none';
+  if (tiNotFound) tiNotFound.style.display = 'none';
+
+  fetch('/api/threat-intel', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({sha256: sha256})
+  })
+  .then(r => r.json())
+  .then(ti => {
+    if (tiLoading) tiLoading.style.display = 'none';
+    if (ti.found) {
+      const scoreColor = ti.malicious > 0 ? '#ff4757' : ti.suspicious > 0 ? '#ffa502' : '#2ed573';
+      document.getElementById('ti-score').textContent = ti.malicious + '/' + ti.total;
+      document.getElementById('ti-score').style.color = scoreColor;
+      document.getElementById('ti-reputation').textContent = ti.reputation;
+      document.getElementById('ti-reputation').style.color = scoreColor;
+      document.getElementById('ti-family').textContent = '🏷️ ' + ti.family;
+      document.getElementById('ti-malicious').textContent = ti.malicious + ' moteurs';
+      document.getElementById('ti-suspicious').textContent = ti.suspicious + ' moteurs';
+      document.getElementById('ti-undetected').textContent = ti.undetected + ' moteurs';
+      document.getElementById('ti-firstseen').textContent = ti.first_seen || 'N/A';
+      if (tiResult) tiResult.style.display = 'block';
+    } else {
+      if (tiNotFound) { tiNotFound.style.display = 'block'; tiNotFound.textContent = '❓ ' + (ti.message || 'Hash inconnu de VirusTotal'); }
+    }
+  })
+  .catch(() => { if (tiLoading) tiLoading.textContent = '❌ VirusTotal inaccessible'; });
+
+  // Forcer niveau de risque selon résultat du scan
+  const riskBadge = document.getElementById('ai-risk-badge');
+  if (riskBadge) {
+    if (result === 'MALWARE') {
+      riskBadge.textContent = 'CRITIQUE';
+      riskBadge.style.background = 'linear-gradient(135deg,#ff0000,#8b0000)';
+    } else if (result === 'SUSPICIOUS') {
+      riskBadge.textContent = 'ÉLEVÉ';
+      riskBadge.style.background = 'linear-gradient(135deg,#ff4757,#c0392b)';
+    } else {
+      riskBadge.textContent = 'FAIBLE';
+      riskBadge.style.background = 'linear-gradient(135deg,#2ed573,#1e8449)';
+    }
+  }
+  // Forcer probabilité selon résultat
+  const probEl2 = document.getElementById('ai-probability');
+  const probBar2 = document.getElementById('ai-prob-bar');
+  if (result === 'MALWARE' && probEl2) {
+    probEl2.textContent = '95%';
+    probEl2.style.color = '#ff4757';
+    if (probBar2) { probBar2.style.width='95%'; probBar2.style.background='#ff4757'; }
+  }
+      document.getElementById('ai-result-sections').style.display = 'block';
+    } else {
+      document.getElementById('ai-loading').style.display = 'block';
+      document.getElementById('ai-dots').textContent = 'Erreur: ' + data.error;
+    }
+  })
+  .catch(err => {
+    document.getElementById('ai-loading').style.display = 'block';
+    document.getElementById('ai-dots').textContent = 'Erreur de connexion';
+  });
+}
+</script>
+
+<!-- Overlay -->
+<div id="ai-overlay" onclick="closeAI()" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9998;"></div>
+
+<!-- Panneau latéral IA -->
+<div id="ai-panel" style="display:none;position:fixed;top:0;right:0;width:480px;height:100%;background:#0d0d1a;border-left:2px solid #667eea;z-index:9999;overflow-y:auto;transform:translateX(100%);transition:transform 0.3s ease;box-shadow:-10px 0 30px rgba(102,126,234,0.3);">
+  
+  <!-- Header -->
+  <div style="background:linear-gradient(135deg,#667eea,#764ba2);padding:20px;position:sticky;top:0;z-index:1;">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <div style="font-size:0.75em;color:rgba(255,255,255,0.7);margin-bottom:4px;">ANALYSE IA — CYBERSÉCURITÉ</div>
+        <div style="font-weight:bold;font-size:1em;color:white;">🤖 <span id="ai-filename"></span></div>
+      </div>
+      <button onclick="closeAI()" style="background:rgba(255,255,255,0.2);border:none;color:white;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:1.1em;">✕</button>
+    </div>
+    <!-- Badge résultat -->
+    <div style="margin-top:12px;">
+      <span id="ai-result-badge" style="padding:4px 12px;border-radius:20px;font-size:0.8em;font-weight:bold;"></span>
+    </div>
+  </div>
+
+  <!-- Contenu -->
+  <div style="padding:20px;" id="ai-content">
+    <!-- Loading -->
+    <div id="ai-loading" style="text-align:center;padding:40px;">
+      <div style="font-size:2em;margin-bottom:15px;">🔍</div>
+      <div style="color:#667eea;font-size:1em;margin-bottom:10px;">Analyse en cours...</div>
+      <div id="ai-dots" style="color:#667eea;font-size:1.5em;letter-spacing:5px;">●●●</div>
+    </div>
+    <!-- Résultat -->
+    <div id="ai-result-sections" style="display:none;">
+      <!-- SHA256 -->
+      <div style="background:#1a1a2e;border-left:4px solid #a0a0a0;border-radius:8px;padding:15px;margin-bottom:15px;">
+        <div style="color:#a0a0a0;font-weight:bold;margin-bottom:8px;">🔑 SHA256</div>
+        <code id="ai-sha256" style="color:#00d2ff;font-size:0.8em;word-break:break-all;"></code>
+      </div>
+
+      <!-- Taille -->
+      <div style="background:#1a1a2e;border-left:4px solid #a29bfe;border-radius:8px;padding:15px;margin-bottom:15px;">
+        <div style="color:#a29bfe;font-weight:bold;margin-bottom:8px;">📦 TAILLE DU FICHIER</div>
+        <span id="ai-filesize" style="color:#e0e0e0;font-size:1.1em;font-weight:bold;"></span>
+      </div>
+
+      <!-- Probabilité de menace -->
+      <div style="background:#1a1a2e;border-left:4px solid #ff6b35;border-radius:8px;padding:15px;margin-bottom:15px;">
+        <div style="color:#ff6b35;font-weight:bold;margin-bottom:10px;">🎯 PROBABILITÉ DE MENACE</div>
+        <div style="display:flex;align-items:center;gap:15px;">
+          <span id="ai-probability" style="font-size:2em;font-weight:bold;"></span>
+          <div style="flex:1;background:#2a2a3e;border-radius:10px;height:12px;overflow:hidden;">
+            <div id="ai-prob-bar" style="height:100%;border-radius:10px;transition:width 0.5s ease;width:0%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Durée analyse IA -->
+      <div style="background:#1a1a2e;border-left:4px solid #74b9ff;border-radius:8px;padding:15px;margin-bottom:15px;">
+        <div style="color:#74b9ff;font-weight:bold;margin-bottom:8px;">⚡ DURÉE ANALYSE IA</div>
+        <span id="ai-duration" style="color:#e0e0e0;font-size:1.1em;font-weight:bold;"></span>
+      </div>
+
+      <!-- Timeline -->
+      <div style="background:#1a1a2e;border-left:4px solid #00d2ff;border-radius:8px;padding:15px;margin-bottom:15px;">
+        <div style="color:#00d2ff;font-weight:bold;margin-bottom:8px;">⏱️ PIPELINE D'ANALYSE</div>
+        <div id="ai-timeline" style="color:#e0e0e0;font-size:0.85em;line-height:2;"></div>
+      </div>
+
+      <!-- Couches -->
+      <div style="background:#1a1a2e;border-left:4px solid #ffa502;border-radius:8px;padding:15px;margin-bottom:15px;">
+        <div style="color:#ffa502;font-weight:bold;margin-bottom:8px;">🔍 COUCHES DE DÉTECTION</div>
+        <div id="ai-layers" style="color:#e0e0e0;font-size:0.85em;line-height:2;"></div>
+      </div>
+
+      <!-- Classification -->
+      <div style="background:#1a1a2e;border-left:4px solid #fd79a8;border-radius:8px;padding:15px;margin-bottom:15px;">
+        <div style="color:#fd79a8;font-weight:bold;margin-bottom:8px;">🏷️ CLASSIFICATION</div>
+        <div id="ai-classification" style="color:#e0e0e0;font-size:0.9em;line-height:1.6;"></div>
+      </div>
+
+      <div id="ai-section-type" style="background:#1a1a2e;border-left:4px solid #667eea;border-radius:8px;padding:15px;margin-bottom:15px;">
+        <div style="color:#667eea;font-weight:bold;margin-bottom:8px;">🎯 TYPE DE MENACE</div>
+        <div id="ai-type-text" style="color:#e0e0e0;line-height:1.6;font-size:0.9em;"></div>
+      </div>
+      <div id="ai-section-danger" style="background:#1a1a2e;border-left:4px solid #ff4757;border-radius:8px;padding:15px;margin-bottom:15px;">
+        <div style="color:#ff4757;font-weight:bold;margin-bottom:8px;">⚠️ POURQUOI C'EST DANGEREUX</div>
+        <div id="ai-danger-text" style="color:#e0e0e0;line-height:1.6;font-size:0.9em;"></div>
+      </div>
+      <div id="ai-section-reco" style="background:#1a1a2e;border-left:4px solid #2ed573;border-radius:8px;padding:15px;margin-bottom:15px;">
+        <div style="color:#2ed573;font-weight:bold;margin-bottom:8px;">🛡️ RECOMMANDATIONS</div>
+        <div id="ai-reco-text" style="color:#e0e0e0;line-height:1.6;font-size:0.9em;"></div>
+      </div>
+      <div id="ai-section-risk" style="background:#1a1a2e;border-radius:8px;padding:15px;margin-bottom:15px;">
+        <div style="font-weight:bold;margin-bottom:8px;">🔴 NIVEAU DE RISQUE</div>
+        <div id="ai-risk-badge" style="display:inline-block;padding:6px 20px;border-radius:20px;font-weight:bold;font-size:1.1em;margin-bottom:8px;"></div>
+        <div id="ai-risk-text" style="color:#e0e0e0;line-height:1.6;font-size:0.9em;"></div>
+      </div>
+      <!-- Bouton copier -->
+      <!-- Threat Intelligence -->
+      <div style="background:#1a1a2e;border-left:4px solid #00cec9;border-radius:8px;padding:15px;margin-bottom:15px;">
+        <div style="color:#00cec9;font-weight:bold;margin-bottom:10px;">🌐 THREAT INTELLIGENCE — VirusTotal</div>
+        <div id="ti-loading" style="color:#888;font-size:0.85em;">⏳ Consultation VirusTotal...</div>
+        <div id="ti-result" style="display:none;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+            <div id="ti-score" style="font-size:1.8em;font-weight:bold;"></div>
+            <div>
+              <div id="ti-reputation" style="font-weight:bold;"></div>
+              <div id="ti-family" style="color:#888;font-size:0.85em;"></div>
+            </div>
+          </div>
+          <div style="background:#0d0d1a;border-radius:6px;padding:10px;font-size:0.82em;color:#ccc;">
+            <div>🔴 Malveillant : <b id="ti-malicious"></b></div>
+            <div>🟡 Suspect     : <b id="ti-suspicious"></b></div>
+            <div>✅ Non détecté : <b id="ti-undetected"></b></div>
+            <div>📅 1ère détection : <b id="ti-firstseen"></b></div>
+          </div>
+        </div>
+        <div id="ti-notfound" style="display:none;color:#888;font-size:0.85em;"></div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:5px;">
+        <button onclick="copyAnalysis()" style="flex:1;background:linear-gradient(135deg,#667eea,#764ba2);color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-size:0.85em;">
+          📋 Copier l'analyse
+        </button>
+        <button onclick="downloadAIReport()" style="flex:1;background:linear-gradient(135deg,#11998e,#38ef7d);color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-size:0.85em;">
+          📥 Télécharger HTML
+        </button>
+        <button onclick="downloadAIPDF()" style="flex:1;background:linear-gradient(135deg,#e17055,#d63031);color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-size:0.85em;">
+          📄 Télécharger PDF
+        </button>
+      </div>
+      </button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

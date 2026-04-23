@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AV-Shield — Quarantaine</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+    <div class="nav-brand">🛡️ AV-Shield</div>
+    <div class="nav-links">
+        <a href="/">Dashboard</a>
+        <a href="/scan">Scanner</a>
+        <a href="/quarantine" class="active">Quarantaine</a>
+        <a href="/reports-page">Rapports</a>
+    </div>
+</nav>
+
+<div class="container">
+
+    <h1 class="page-title">🔒 Fichiers en Quarantaine</h1>
+
+    <!-- COMPTEUR -->
+    <div class="quarantine-header">
+        <div class="quarantine-count">
+            <span class="count-number">{{ files|length }}</span>
+            fichier(s) isolé(s)
+        </div>
+        <div class="quarantine-info">
+            ⚠️ Ces fichiers sont isolés et ne peuvent pas s'exécuter
+        </div>
+    </div>
+
+    <!-- BARRE DE RECHERCHE ET FILTRES -->
+    <div style="background:#1a1a2e;border-radius:12px;padding:20px;margin-bottom:20px;display:flex;gap:15px;flex-wrap:wrap;align-items:center;">
+      <div style="flex:2;min-width:200px;">
+        <input type="text" id="search-input" placeholder="🔍 Rechercher par nom de fichier..."
+          oninput="filterTable()"
+          style="width:100%;padding:10px 15px;background:#0d0d1a;border:1px solid #333;border-radius:8px;color:#e0e0e0;font-size:0.9em;box-sizing:border-box;">
+      </div>
+      <div style="flex:1;min-width:150px;">
+        <select id="threat-filter" onchange="filterTable()"
+          style="width:100%;padding:10px;background:#0d0d1a;border:1px solid #333;border-radius:8px;color:#e0e0e0;font-size:0.9em;">
+          <option value="">🏷️ Toutes les menaces</option>
+          <option value="Eicar">Eicar</option>
+          <option value="Trojan">Trojan</option>
+          <option value="Backdoor">Backdoor</option>
+          <option value="Ransomware">Ransomware</option>
+          <option value="Suspicious">Suspicious</option>
+        </select>
+      </div>
+      <div style="flex:1;min-width:150px;">
+        <select id="date-filter" onchange="filterTable()"
+          style="width:100%;padding:10px;background:#0d0d1a;border:1px solid #333;border-radius:8px;color:#e0e0e0;font-size:0.9em;">
+          <option value="">📅 Toutes les dates</option>
+          <option value="today">Aujourd'hui</option>
+          <option value="week">Cette semaine</option>
+          <option value="month">Ce mois</option>
+        </select>
+      </div>
+      <button onclick="resetFilters()"
+        style="padding:10px 20px;background:#333;border:none;border-radius:8px;color:#e0e0e0;cursor:pointer;font-size:0.9em;">
+        ↺ Réinitialiser
+      </button>
+      <div id="filter-count" style="color:#888;font-size:0.85em;"></div>
+    </div>
+
+    <!-- TABLEAU QUARANTAINE -->
+    <div class="section">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Fichier Original</th>
+                    <th>Menace</th>
+                    <th>SHA-256</th>
+                    <th>Taille</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for file in files %}
+                <tr id="row-{{ loop.index }}" data-filename="{{ file.original_name }}" data-threat="{{ file.threat_name or '' }}" data-date="{{ file.quarantine_date }}">
+                    <td>
+                        <code>{{ file.original_path.split('/')[-1] }}</code>
+                        <br>
+                        <small class="path">{{ file.original_path }}</small>
+                    </td>
+                    <td>
+                        <span class="badge danger">
+                            {{ file.threat_name }}
+                        </span>
+                    </td>
+                    <td>
+                        <code>{{ file.sha256[:16] if file.sha256 else 'N/A' }}...</code>
+                    </td>
+                    <td>{{ file.filesize }} octets</td>
+                    <td>{{ file.quarantine_date }}</td>
+                    <td>
+                        <button class="btn-restore"
+                            onclick="restoreFile('{{ file.quarantine_path.split('/')[-1] }}', {{ loop.index }}, {{ file.filesize }})"
+                            {% if file.filesize > 2147483648 %}
+                            style="opacity:0.5;cursor:not-allowed;" disabled title="Fichier trop volumineux (>2Go)"
+                            {% endif %}>
+                            ♻️ Restaurer {% if file.filesize > 2147483648 %}(>2Go){% endif %}
+                        </button>
+                        <button class="btn-delete"
+                            onclick="deleteFile('{{ file.quarantine_path.split('/')[-1] }}', {{ loop.index }})">
+                            🗑️ Supprimer
+                        </button>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="empty">
+                        ✅ Quarantaine vide — Aucun fichier isolé
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- MESSAGE CONFIRMATION -->
+    <div id="action-message" class="hidden"></div>
+
+</div>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script>
+function restoreFile(name, index, filesize) {
+    const maxSize = 2 * 1024 * 1024 * 1024; // 2Go
+    if (filesize && filesize > maxSize) {
+        alert('❌ Restauration impossible — Fichier trop volumineux (>' + (filesize/1024/1024/1024).toFixed(2) + ' Go). Limite : 2 Go.');
+        return;
+    }
+    if (!confirm('⚠️ Restaurer ce fichier ? Il sera remis à son emplacement original.')) return;
+
+    fetch('/api/quarantine/restore', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({name: name})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            showMessage('✅ Fichier restauré avec succès !', 'clean');
+            document.getElementById('row-' + index).remove();
+        } else {
+            showMessage('❌ Erreur: ' + (data.error || 'Inconnue'), 'danger');
+        }
+    })
+    .catch(err => showMessage('❌ Erreur: ' + err, 'danger'));
+}
+
+function deleteFile(name, index) {
+    if (!confirm('🗑️ Supprimer définitivement ce fichier ? Cette action est irréversible !')) return;
+
+    fetch('/api/quarantine/delete', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({name: name})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            showMessage('✅ Fichier supprimé définitivement.', 'clean');
+            document.getElementById('row-' + index).remove();
+        } else {
+            showMessage('❌ Erreur: ' + (data.error || 'Inconnue'), 'danger');
+        }
+    })
+    .catch(err => showMessage('❌ Erreur: ' + err, 'danger'));
+}
+
+function showMessage(msg, type) {
+    const div = document.getElementById('action-message');
+    div.textContent = msg;
+    div.className = 'action-message ' + type;
+    setTimeout(() => div.className = 'action-message hidden', 3000);
+}
+</script>
+
+<script>
+function filterTable() {
+  const search = document.getElementById('search-input').value.toLowerCase();
+  const threat  = document.getElementById('threat-filter').value.toLowerCase();
+  const date    = document.getElementById('date-filter').value;
+  const rows    = document.querySelectorAll('tbody tr[data-filename]');
+  let visible   = 0;
+
+  const now   = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const week  = new Date(today); week.setDate(today.getDate() - 7);
+  const month = new Date(today); month.setMonth(today.getMonth() - 1);
+
+  rows.forEach(row => {
+    const fname  = (row.dataset.filename || '').toLowerCase();
+    const fthreat = (row.dataset.threat || '').toLowerCase();
+    const fdate  = row.dataset.date ? new Date(row.dataset.date) : null;
+
+    const matchSearch = !search || fname.includes(search);
+    const matchThreat = !threat || fthreat.includes(threat);
+    let matchDate = true;
+    if (date && fdate) {
+      if (date === 'today') matchDate = fdate >= today;
+      else if (date === 'week') matchDate = fdate >= week;
+      else if (date === 'month') matchDate = fdate >= month;
+    }
+
+    const show = matchSearch && matchThreat && matchDate;
+    row.style.display = show ? '' : 'none';
+    if (show) visible++;
+  });
+
+  document.getElementById('filter-count').textContent = 
+    visible + ' fichier(s) affiché(s) sur ' + rows.length;
+}
+
+function resetFilters() {
+  document.getElementById('search-input').value = '';
+  document.getElementById('threat-filter').value = '';
+  document.getElementById('date-filter').value = '';
+  filterTable();
+}
+</script>
+</body>
+</html>

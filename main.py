@@ -33,6 +33,20 @@ from fastapi.middleware.cors import CORSMiddleware
 monitor_process = None
 
 
+def get_av_paths():
+    """Détecte l'OS et retourne les chemins AV-Shield appropriés."""
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    if platform.system() == "Windows":
+        av_shield_dir = os.path.join(base_dir, "av-shield-windows-main")
+        av_bin = os.path.join(av_shield_dir, "avshield.exe")
+    else:
+        av_shield_dir = os.path.join(base_dir, "av-shield")
+        av_bin = os.path.join(av_shield_dir, "avshield")
+    reports_dir = os.path.join(av_shield_dir, "reports")
+    db_path = os.path.join(av_shield_dir, "database", "avshield.db")
+    return av_shield_dir, av_bin, reports_dir, db_path
+
+
 # Simulation d'un stockage de codes (En prod, utiliser Redis/DB avec expiration)
 reset_codes = {} # {email: {"code": str, "expires": float}}
 signup_codes = {} # {email: {"code": str, "expires": float}}
@@ -977,11 +991,8 @@ async def scanner_av_endpoint(request: ScannerAVRequest):
     
     print(f"DEBUG: Requête scannerav pour le chemin: {request.path}")
     
-    # Configuration des chemins relatifs à ce fichier
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    av_shield_dir = os.path.join(base_dir, "av-shield")
-    av_bin = os.path.join(av_shield_dir, "avshield")
-    reports_dir = os.path.join(av_shield_dir, "reports")
+    # Configuration des chemins selon l'OS détecté
+    av_shield_dir, av_bin, reports_dir, _ = get_av_paths()
 
     if not os.path.exists(av_bin):
         print(f"ERROR: Binaire AV-Shield introuvable à {av_bin}")
@@ -1094,9 +1105,7 @@ async def get_av_stats():
     import re
     import traceback
     
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    av_shield_dir = os.path.join(base_dir, "av-shield")
-    av_bin = os.path.join(av_shield_dir, "avshield")
+    av_shield_dir, av_bin, _, _ = get_av_paths()
 
     print("DEBUG: Requête AV Stats")
     try:
@@ -1133,7 +1142,7 @@ async def get_av_history(email: str):
     """Récupère l'historique des scans via SQLite, filtré par utilisateur"""
     import sqlite3
     import traceback
-    db_path = os.path.join(os.path.dirname(__file__), "av-shield", "database", "avshield.db")
+    _, _, _, db_path = get_av_paths()
     
     print(f"DEBUG: Requête AV History pour {email} (DB: {db_path})")
     if not os.path.exists(db_path):
@@ -1173,7 +1182,7 @@ async def cleanup_av_history(days: int, email: str):
     import traceback
     from datetime import datetime, timedelta
 
-    db_path = os.path.join(os.path.dirname(__file__), "av-shield", "database", "avshield.db")
+    _, _, _, db_path = get_av_paths()
     print(f"DEBUG: Requête Cleanup AV History (jours: {days}, DB: {db_path})")
     
     if not os.path.exists(db_path):
@@ -1203,7 +1212,7 @@ async def cleanup_av_history(days: int, email: str):
         cursor = conn.cursor()
         
         format_strings = ','.join(['?'] * len(target_scan_ids))
-        cursor.execute(f"DELETE FROM scans WHERE report_id IN ({format_strings})", tuple(target_scan_ids))
+        cursor.execute(f"DELETE FROM scans WHERE scan_id IN ({format_strings})", tuple(target_scan_ids))
         cursor.execute(f"DELETE FROM threats WHERE scan_id IN ({format_strings})", tuple(target_scan_ids))
         
         count = cursor.rowcount
@@ -1231,7 +1240,7 @@ async def get_av_quarantine(email: str):
     """Récupère la liste des fichiers en quarantaine, filtrée par utilisateur"""
     import sqlite3
     import traceback
-    db_path = os.path.join(os.path.dirname(__file__), "av-shield", "database", "avshield.db")
+    _, _, _, db_path = get_av_paths()
 
     print(f"DEBUG: Requête AV Quarantine pour {email} (DB: {db_path})")
     if not os.path.exists(db_path):
@@ -1260,8 +1269,8 @@ async def get_av_quarantine(email: str):
         items = []
         for row in rows:
             # Si le fichier en quarantaine correspond à un fichier que l'utilisateur a scanné
-            # Note: avshield stocke souvent le chemin complet
-            if any(mapping[1] in row["filename"] for mapping in allowed_mappings):
+            # Note: avshield stocke le chemin complet dans original_path
+            if any(mapping[1] in row["original_path"] for mapping in allowed_mappings):
                 items.append(dict(row))
                 
         conn.close()
@@ -1295,7 +1304,7 @@ async def restore_quarantine_file(filename: str, email: str, destination: str = 
     except mysql.connector.Error as err:
         raise HTTPException(status_code=500, detail=f"Erreur BD: {err}")
 
-    bin_path = os.path.join(os.path.dirname(__file__), "av-shield", "avshield")
+    av_shield_dir, bin_path, _, _ = get_av_paths()
     
     if not os.path.exists(bin_path):
         raise HTTPException(status_code=500, detail="Binaire av-shield introuvable")
@@ -1310,7 +1319,7 @@ async def restore_quarantine_file(filename: str, email: str, destination: str = 
             *cmd,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
-            cwd=os.path.join(os.path.dirname(__file__), "av-shield")
+            cwd=av_shield_dir
         )
         stdout, stderr = await process.communicate()
         
@@ -1328,9 +1337,7 @@ async def restore_quarantine_file(filename: str, email: str, destination: str = 
 async def delete_quarantine_file(filename: str, email: str):
     """Supprime définitivement un fichier de la quarantaine avec validation de propriété"""
     import traceback
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    av_shield_dir = os.path.join(base_dir, "av-shield")
-    av_bin = os.path.join(av_shield_dir, "avshield")
+    av_shield_dir, av_bin, _, _ = get_av_paths()
 
     print(f"DEBUG: Suppression de {filename} par {email}")
     

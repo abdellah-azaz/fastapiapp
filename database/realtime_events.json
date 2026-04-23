@@ -1,5 +1,12 @@
 [
   {
+    "filepath": "/tmp/ransomware_test.py",
+    "filename": "ransomware_test.py",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-23 13:07:08"
+  },
+  {
     "filepath": "/tmp/kotlin-compiler-in-gradle-4631766214867487831.alive",
     "filename": "kotlin-compiler-in-gradle-4631766214867487831.alive",
     "result": "CLEAN",
@@ -341,12 +348,5 @@
     "result": "CLEAN",
     "threat": "None",
     "timestamp": "2026-04-16 11:02:00"
-  },
-  {
-    "filepath": "/tmp/.com.microsoft.Edge.778Gvu",
-    "filename": ".com.microsoft.Edge.778Gvu",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-04-16 11:01:58"
   }
 ]

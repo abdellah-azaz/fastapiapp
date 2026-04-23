@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AV-Shield — Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+    <div class="nav-brand">🛡️ AV-Shield</div>
+    <div class="nav-links">
+        <a href="/" class="active">Dashboard</a>
+        <a href="/scan">Scanner</a>
+        <a href="/quarantine">Quarantaine</a>
+        <a href="/reports-page">Rapports</a>
+    </div>
+</nav>
+
+<!-- CONTENU PRINCIPAL -->
+<div class="container">
+
+    <h1 class="page-title">📊 Dashboard</h1>
+
+    <!-- PROTECTION TEMPS REEL -->
+    <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid #2ed573;border-radius:12px;padding:20px;margin-bottom:25px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:15px;">
+      <div style="display:flex;align-items:center;gap:15px;">
+        <div style="width:12px;height:12px;border-radius:50%;background:#2ed573;box-shadow:0 0 10px #2ed573;animation:pulse 2s infinite;"></div>
+        <div>
+          <div style="color:#2ed573;font-weight:bold;font-size:1.1em;">🛡️ Protection Temps Réel</div>
+          <div style="color:#888;font-size:0.85em;">Surveillance automatique active</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:30px;flex-wrap:nowrap;">
+        <div style="text-align:center;">
+          <div style="color:#888;font-size:0.75em;">DOSSIERS SURVEILLÉS</div>
+          <div style="color:#e0e0e0;font-size:0.9em;">Downloads &nbsp;|&nbsp; Desktop &nbsp;|&nbsp; Documents &nbsp;|&nbsp; Temp &nbsp;|&nbsp; AppData</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="color:#888;font-size:0.75em;">DERNIER ÉVÉNEMENT</div>
+          <div id="rt-last-event" style="color:#ffa502;font-size:0.9em;">Aucun événement récent</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="color:#888;font-size:0.75em;">ÉVÉNEMENTS AUJOURD'HUI</div>
+          <div id="rt-count" onclick="showEventsModal()" style="color:#00cec9;font-weight:bold;font-size:1.1em;cursor:pointer;text-decoration:underline;" title="Voir les événements">0</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="color:#888;font-size:0.75em;">STATUT</div>
+          <div style="color:#2ed573;font-weight:bold;">● ACTIVE</div>
+        </div>
+      </div>
+    </div>
+    <style>@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }</style>
+
+    <!-- CARTES STATISTIQUES -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon">🔍</div>
+            <div class="stat-number">{{ stats.total_scans }}</div>
+            <div class="stat-label">Scans Total</div>
+        </div>
+        <div class="stat-card clean">
+            <div class="stat-icon">✅</div>
+            <div class="stat-number">{{ stats.total_clean }}</div>
+            <div class="stat-label">Fichiers Propres</div>
+        </div>
+        <div class="stat-card danger">
+            <div class="stat-icon">☠️</div>
+            <div class="stat-number">{{ stats.total_threats }}</div>
+            <div class="stat-label">Menaces Détectées</div>
+        </div>
+        <div class="stat-card warning">
+            <div class="stat-icon">🔒</div>
+            <div class="stat-number">{{ stats.total_quarantine }}</div>
+            <div class="stat-label">En Quarantaine</div>
+        </div>
+    </div>
+
+<!-- Graphique Distribution des Menaces -->
+<div class="section">
+    <h2 class="section-title">🔰 Distribution des Menaces</h2>
+  <div style="display:flex;align-items:center;justify-content:center;gap:40px;flex-wrap:wrap;padding:20px;">
+    <div style="position:relative;width:250px;height:250px;">
+      <canvas id="threatChart"></canvas>
+      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;">
+        <div style="font-size:1.8em;font-weight:bold;color:white;">{{ stats.total_scans }}</div>
+        <div style="font-size:0.75em;color:#888;">scans total</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:15px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:14px;height:14px;border-radius:50%;background:#2ed573;"></div>
+        <span style="color:#e0e0e0;">Propres</span>
+        <span style="color:#2ed573;font-weight:bold;margin-left:auto;">{{ stats.total_clean }}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:14px;height:14px;border-radius:50%;background:#ffa502;"></div>
+        <span style="color:#e0e0e0;">Suspects</span>
+        <span style="color:#ffa502;font-weight:bold;margin-left:auto;">{{ stats.total_suspicious }}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:14px;height:14px;border-radius:50%;background:#ff4757;"></div>
+        <span style="color:#e0e0e0;">Malwares</span>
+        <span style="color:#ff4757;font-weight:bold;margin-left:auto;">{{ stats.total_malware }}</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- BOUTON SCAN RAPIDE -->
+    <div class="quick-scan">
+        <h2>⚡ Scan Rapide</h2>
+        <div class="scan-form">
+            <input type="text" id="quick-path"
+                   placeholder="/home/fatima/Downloads"
+                   class="scan-input">
+            <button onclick="quickScan()" class="btn-scan">
+                🔍 Scanner
+            </button>
+        </div>
+        <div id="scan-result" class="scan-result hidden"></div>
+    </div>
+
+    <!-- DERNIERS SCANS -->
+    <div class="section">
+        <h2>🕐 Derniers Scans</h2>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID Scan</th>
+                    <th>Cible</th>
+                    <th>Total</th>
+                    <th>Propres</th>
+                    <th>Suspects</th>
+                    <th>Malwares</th>
+                    <th>Durée</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for scan in scans %}
+                <tr>
+                    <td><code>{{ scan.scan_id }}</code></td>
+                    <td>{{ scan.target_path }}</td>
+                    <td>{{ scan.total_files }}</td>
+                    <td class="clean">{{ scan.clean_files }}</td>
+                    <td class="warning">{{ scan.suspicious_files }}</td>
+                    <td class="danger">{{ scan.malware_files }}</td>
+                    <td>{{ "%.2f"|format(scan.scan_duration) }}s</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="empty">
+                        Aucun scan effectué
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- DERNIÈRES MENACES -->
+    <div class="section">
+        <h2>⚠️ Dernières Menaces</h2>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Fichier</th>
+                    <th>Menace</th>
+                    <th>SHA-256</th>
+                    <th>Score</th>
+                    <th>Entropie</th>
+                    <th>Quarantaine</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for threat in threats %}
+                <tr>
+                    <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ threat.filepath.split('/')[-1] }}">{{ threat.filepath.split('/')[-1] }}</td>
+                    <td class="danger">{{ threat.threat_name }}</td>
+                    <td><code>{{ threat.sha256[:16] }}...</code></td>
+                    <td>{{ threat.heuristic_score }}</td>
+                    <td>{{ "%.2f"|format(threat.entropy_value) }}</td>
+                    <td>
+                        {% if threat.quarantined %}
+                        <span class="badge danger">Isolé</span>
+                        {% else %}
+                        <span class="badge warning">Non isolé</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="empty">
+                        Aucune menace détectée
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script>
+function quickScan() {
+    const path = document.getElementById('quick-path').value;
+    if (!path) {
+        alert('Entrez un chemin à scanner');
+        return;
+    }
+
+    const resultDiv = document.getElementById('scan-result');
+    resultDiv.className = 'scan-result';
+    resultDiv.innerHTML = '⏳ Scan en cours...';
+
+    fetch('/api/scan', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({path: path})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.error) {
+        resultDiv.innerHTML = '❌ Erreur: ' + data.error;
+        resultDiv.className = 'scan-result danger';
+        return;
+    }
+
+    let html = "✅ Scan terminé<br><br>";
+
+    // ------------------------
+    // QUARANTAINE
+    // ------------------------
+    if (data.quarantined) {
+
+        html += `
+        <div style="color:green;font-weight:bold">
+        ✔ Fichier isolé en quarantaine<br>
+        📁 ${data.quarantine_file}
+        </div><br>
+        `;
+
+    }
+
+    // ------------------------
+    // BOUTON RAPPORT HTML
+    // ------------------------
+    if (data.html_report_path) {
+
+        const htmlFile = data.html_report_path.split("/").pop();
+
+        html += `
+        <a class="btn btn-info"
+           target="_blank"
+           href="/reports/${htmlFile}">
+           Voir rapport HTML
+        </a><br><br>
+        `;
+
+    }
+
+    // ------------------------
+    // BOUTON RAPPORT JSON
+    // ------------------------
+    if (data.report_path) {
+
+        const jsonFile = data.report_path.split("/").pop();
+
+        html += `
+        <a class="btn btn-secondary"
+           href="/reports/${jsonFile}"
+           download>
+           Télécharger rapport JSON
+        </a><br><br>
+        `;
+
+    }
+
+    html += `<a href="/">Actualiser</a>`;
+
+    resultDiv.innerHTML = html;
+    resultDiv.className = 'scan-result clean';
+    })
+    .catch(err => {
+        resultDiv.innerHTML = '❌ Erreur: ' + err;
+        resultDiv.className = 'scan-result danger';
+    });
+}
+</script>
+
+
+<script>
+const ctx = document.getElementById('threatChart').getContext('2d');
+new Chart(ctx, {
+  type: 'doughnut',
+  data: {
+    labels: ['Propres', 'Suspects', 'Malwares'],
+    datasets: [{
+      data: [{{ stats.total_clean }}, {{ stats.total_suspicious }}, {{ stats.total_malware }}],
+      backgroundColor: ['#2ed573', '#ffa502', '#ff4757'],
+      borderColor: '#0d0d1a',
+      borderWidth: 3,
+      hoverOffset: 10
+    }]
+  },
+  options: {
+    responsive: true,
+    cutout: '70%',
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: ctx => ` ${ctx.label}: ${ctx.parsed} fichiers`
+        }
+      }
+    }
+  }
+});
+</script>
+
+<!-- Modal événements temps réel -->
+<div id="events-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999;justify-content:center;align-items:center;">
+  <div style="background:#1a1a2e;border:1px solid #00cec9;border-radius:12px;padding:25px;width:90%;max-width:700px;max-height:80vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <h2 style="color:#00cec9;margin:0;">📋 Événements Temps Réel</h2>
+      <button onclick="closeEventsModal()" style="background:none;border:none;color:#888;font-size:1.5em;cursor:pointer;">✕</button>
+    </div>
+    <div id="events-list"></div>
+  </div>
+</div>
+
+<script>
+let allEvents = [];
+
+function showEventsModal() {
+  const modal = document.getElementById('events-modal');
+  modal.style.display = 'flex';
+  renderEventsList();
+}
+
+function closeEventsModal() {
+  document.getElementById('events-modal').style.display = 'none';
+}
+
+function renderEventsList() {
+  const list = document.getElementById('events-list');
+  if (!allEvents.length) {
+    list.innerHTML = '<div style="color:#888;text-align:center;padding:20px;">Aucun événement enregistré</div>';
+    return;
+  }
+  const today = new Date().toISOString().slice(0,10);
+  list.innerHTML = allEvents.map(e => {
+    const icon  = e.result === 'MALWARE' ? '☠️' : e.result === 'SUSPICIOUS' ? '⚠️' : '✅';
+    const color = e.result === 'MALWARE' ? '#ff4757' : e.result === 'SUSPICIOUS' ? '#ffa502' : '#2ed573';
+    return `<div style="background:#0d0d1a;border-left:4px solid ${color};border-radius:8px;padding:12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <div style="color:${color};font-weight:bold;">${icon} ${e.filename}</div>
+        <div style="color:#888;font-size:0.8em;">${e.filepath}</div>
+        <div style="color:#888;font-size:0.8em;">Menace: ${e.threat || 'None'}</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="color:${color};font-weight:bold;">${e.result}</div>
+        <div style="color:#888;font-size:0.8em;">${e.timestamp}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function updateRealtimeEvents() {
+  fetch('/api/realtime-events')
+    .then(r => r.json())
+    .then(events => {
+      const today = new Date().toISOString().slice(0,10);
+      const todayEvents = events.filter(e => e.timestamp && e.timestamp.startsWith(today));
+      
+      allEvents = events;
+      document.getElementById('rt-count').textContent = todayEvents.length;
+      // Mettre à jour le modal si ouvert
+      if (document.getElementById('events-modal').style.display === 'flex') {
+        renderEventsList();
+      }
+      
+      if (events.length > 0) {
+        const last = events[0];
+        const icon = last.result === 'MALWARE' ? '☠️' : last.result === 'SUSPICIOUS' ? '⚠️' : '✅';
+        const color = last.result === 'MALWARE' ? '#ff4757' : last.result === 'SUSPICIOUS' ? '#ffa502' : '#2ed573';
+        document.getElementById('rt-last-event').style.color = color;
+        document.getElementById('rt-last-event').textContent = icon + ' ' + last.filename + ' — ' + last.timestamp.slice(11,16);
+      }
+    })
+    .catch(() => {});
+}
+
+// Polling toutes les 3 secondes
+updateRealtimeEvents();
+setInterval(updateRealtimeEvents, 3000);
+</script>
+</body>
+</html>

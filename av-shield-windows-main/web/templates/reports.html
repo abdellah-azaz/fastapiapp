@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AV-Shield — Rapports</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<nav class="navbar">
+    <div class="nav-brand">🛡️ AV-Shield</div>
+    <div class="nav-links">
+        <a href="/">Dashboard</a>
+        <a href="/scan">Scanner</a>
+        <a href="/quarantine">Quarantaine</a>
+        <a href="/reports-page" class="active">Rapports</a>
+    </div>
+</nav>
+<div class="container">
+    <h1 class="page-title">📄 Rapports de Scan</h1>
+    <!-- BARRE DE RECHERCHE -->
+    <div style="background:#1a1a2e;border-radius:12px;padding:20px;margin-bottom:20px;display:flex;gap:15px;flex-wrap:wrap;align-items:center;">
+      <div style="flex:2;min-width:200px;">
+        <input type="text" id="report-search" placeholder="🔍 Rechercher par nom de rapport..."
+          oninput="filterReports()"
+          style="width:100%;padding:10px 15px;background:#0d0d1a;border:1px solid #333;border-radius:8px;color:#e0e0e0;font-size:0.9em;box-sizing:border-box;">
+      </div>
+      <div style="flex:1;min-width:150px;">
+        <select id="type-filter" onchange="filterReports()"
+          style="width:100%;padding:10px;background:#0d0d1a;border:1px solid #333;border-radius:8px;color:#e0e0e0;font-size:0.9em;">
+          <option value="">📄 Tous les types</option>
+          <option value="json">JSON</option>
+          <option value="html">HTML</option>
+        </select>
+      </div>
+      <button onclick="resetReportFilters()"
+        style="padding:10px 20px;background:#333;border:none;border-radius:8px;color:#e0e0e0;cursor:pointer;font-size:0.9em;">
+        ↺ Réinitialiser
+      </button>
+      <div id="report-count" style="color:#888;font-size:0.85em;"></div>
+    </div>
+
+    <div class="section">
+        <table class="table" id="reports-table">
+            <thead>
+                <tr>
+                    <th>Nom du rapport</th>
+                    <th>Type</th>
+                    <th>Taille</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="reports-tbody">
+                <tr><td colspan="4" class="empty">Chargement...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script>
+function loadReports() {
+    fetch('/api/reports')
+        .then(r => r.json())
+        .then(data => {
+            const tbody = document.getElementById('reports-tbody');
+            tbody.innerHTML = '';
+            if (!data.length) {
+                tbody.innerHTML = '<tr><td colspan="4" class="empty">Aucun rapport disponible</td></tr>';
+                return;
+            }
+            // Trier par nom décroissant (plus récent en premier)
+            data.sort((a, b) => b.name.localeCompare(a.name));
+            window._allReports = data;
+            data.forEach(r => {
+                const isHTML = r.name.endsWith('.html');
+                const isJSON = r.name.endsWith('.json');
+                const type = isHTML ? '🌐 HTML' : isJSON ? '📋 JSON' : '📄';
+                const size = r.size < 1024 ? r.size + ' B' :
+                             r.size < 1024*1024 ? (r.size/1024).toFixed(1) + ' KB' :
+                             (r.size/1024/1024).toFixed(1) + ' MB';
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><code>${r.name}</code></td>
+                    <td>${type}</td>
+                    <td>${size}</td>
+                    <td>
+                        ${isHTML ? `<a href="/reports/${r.name}" target="_blank" class="btn-small">👁️ Voir</a>` : ''}
+                        <a href="/reports/download/${r.name}" class="btn-small">⬇️ Télécharger</a>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        })
+        .catch(() => {
+            document.getElementById('reports-tbody').innerHTML =
+                '<tr><td colspan="4" class="empty">Erreur de chargement</td></tr>';
+        });
+}
+document.addEventListener('DOMContentLoaded', loadReports);
+</script>
+<script>
+window._allReports = [];
+
+function filterReports() {
+  const search = document.getElementById('report-search').value.toLowerCase();
+  const type   = document.getElementById('type-filter').value.toLowerCase();
+  const tbody  = document.getElementById('reports-tbody');
+  
+  const filtered = window._allReports.filter(r => {
+    const matchSearch = !search || r.name.toLowerCase().includes(search);
+    const matchType   = !type || r.name.toLowerCase().endsWith('.' + type);
+    return matchSearch && matchType;
+  });
+
+  tbody.innerHTML = '';
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="4" class="empty">Aucun rapport trouvé</td></tr>';
+  } else {
+    filtered.forEach(r => {
+      const ext = r.name.endsWith('.json') ? 'JSON' : 'HTML';
+      const color = ext === 'JSON' ? '#667eea' : '#2ed573';
+      tbody.innerHTML += `<tr>
+        <td>${r.name}</td>
+        <td><span style="color:${color};font-weight:bold;">${ext}</span></td>
+        <td>${r.size}</td>
+        <td>
+          <a href="/reports/download/${r.name}" style="color:#667eea;">📥 Télécharger</a>
+        </td>
+      </tr>`;
+    });
+  }
+  document.getElementById('report-count').textContent = 
+    filtered.length + ' rapport(s) affiché(s) sur ' + window._allReports.length;
+}
+
+function resetReportFilters() {
+  document.getElementById('report-search').value = '';
+  document.getElementById('type-filter').value = '';
+  filterReports();
+}
+
+// Appliquer filtre après chargement
+const origLoad = loadReports;
+</script>
+</body>
+</html>
