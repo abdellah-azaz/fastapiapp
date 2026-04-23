@@ -58,7 +58,7 @@ FIXED_NONCE = bytes.fromhex(FIXED_NONCE_HEX)
 DB_CONFIG = {
     "host": os.environ.get("DB_HOST", "localhost"),
     "user": os.environ.get("DB_USER", "root"),
-    "password": os.environ.get("DB_PASS", ""),
+    "password": os.environ.get("DB_PASS", "Azaz2003@abdellah"),
     "database": os.environ.get("DB_NAME", "passworddb")
 }
 

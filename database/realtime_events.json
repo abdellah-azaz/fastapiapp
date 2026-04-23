@@ -1,5 +1,19 @@
 [
   {
+    "filepath": "/tmp/kotlin-compiler-in-gradle-4631766214867487831.alive",
+    "filename": "kotlin-compiler-in-gradle-4631766214867487831.alive",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-21 16:06:48"
+  },
+  {
+    "filepath": "/tmp/adb.1000.log",
+    "filename": "adb.1000.log",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-21 16:06:06"
+  },
+  {
     "filepath": "/tmp/kotlin-daemon.2026-04-21.10-53-36-798.00.log",
     "filename": "kotlin-daemon.2026-04-21.10-53-36-798.00.log",
     "result": "CLEAN",
@@ -334,19 +348,5 @@
     "result": "CLEAN",
     "threat": "None",
     "timestamp": "2026-04-16 11:01:58"
-  },
-  {
-    "filepath": "/tmp/.com.microsoft.Edge.L2UGPr",
-    "filename": ".com.microsoft.Edge.L2UGPr",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-04-16 11:01:57"
-  },
-  {
-    "filepath": "/tmp/.com.microsoft.Edge.ANdt3g",
-    "filename": ".com.microsoft.Edge.ANdt3g",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-04-16 11:01:46"
   }
 ]
