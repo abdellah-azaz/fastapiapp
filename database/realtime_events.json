@@ -1,5 +1,75 @@
 [
   {
+    "filepath": "/tmp/.com.microsoft.Edge.cGsuM3",
+    "filename": ".com.microsoft.Edge.cGsuM3",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-27 14:32:25"
+  },
+  {
+    "filepath": "/tmp/.com.microsoft.Edge.Yxpx9A",
+    "filename": ".com.microsoft.Edge.Yxpx9A",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-27 14:29:36"
+  },
+  {
+    "filepath": "/tmp/.com.microsoft.Edge.5KpyPs",
+    "filename": ".com.microsoft.Edge.5KpyPs",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-27 14:25:40"
+  },
+  {
+    "filepath": "/tmp/.com.microsoft.Edge.Yxrj2b",
+    "filename": ".com.microsoft.Edge.Yxrj2b",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-27 14:19:47"
+  },
+  {
+    "filepath": "/tmp/.com.microsoft.Edge.Cl72No",
+    "filename": ".com.microsoft.Edge.Cl72No",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-27 14:16:22"
+  },
+  {
+    "filepath": "/tmp/.com.microsoft.Edge.kOZuyB",
+    "filename": ".com.microsoft.Edge.kOZuyB",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-27 14:14:23"
+  },
+  {
+    "filepath": "/tmp/.com.microsoft.Edge.sjigZZ",
+    "filename": ".com.microsoft.Edge.sjigZZ",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-27 14:10:24"
+  },
+  {
+    "filepath": "/tmp/.com.microsoft.Edge.rgcObT",
+    "filename": ".com.microsoft.Edge.rgcObT",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-27 14:06:37"
+  },
+  {
+    "filepath": "/tmp/.com.microsoft.Edge.HJwIg4",
+    "filename": ".com.microsoft.Edge.HJwIg4",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-27 14:02:34"
+  },
+  {
+    "filepath": "/tmp/ransomware_test.py",
+    "filename": "ransomware_test.py",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-04-27 12:43:59"
+  },
+  {
     "filepath": "/home/abdellah/Downloads/config_local (1).py",
     "filename": "config_local (1).py",
     "result": "CLEAN",
@@ -278,75 +348,5 @@
     "result": "CLEAN",
     "threat": "None",
     "timestamp": "2026-04-16 11:03:51"
-  },
-  {
-    "filepath": "/tmp/.com.microsoft.Edge.iP531c",
-    "filename": ".com.microsoft.Edge.iP531c",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-04-16 11:03:38"
-  },
-  {
-    "filepath": "/tmp/.com.microsoft.Edge.HJft8g",
-    "filename": ".com.microsoft.Edge.HJft8g",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-04-16 11:03:36"
-  },
-  {
-    "filepath": "/tmp/.com.microsoft.Edge.l8luc7",
-    "filename": ".com.microsoft.Edge.l8luc7",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-04-16 11:03:33"
-  },
-  {
-    "filepath": "/tmp/.com.microsoft.Edge.VUQUeY",
-    "filename": ".com.microsoft.Edge.VUQUeY",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-04-16 11:03:27"
-  },
-  {
-    "filepath": "/tmp/.com.microsoft.Edge.TyhApL",
-    "filename": ".com.microsoft.Edge.TyhApL",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-04-16 11:03:23"
-  },
-  {
-    "filepath": "/tmp/.com.microsoft.Edge.4m5d1h",
-    "filename": ".com.microsoft.Edge.4m5d1h",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-04-16 11:03:19"
-  },
-  {
-    "filepath": "/tmp/.com.microsoft.Edge.h6qeXC",
-    "filename": ".com.microsoft.Edge.h6qeXC",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-04-16 11:03:16"
-  },
-  {
-    "filepath": "/tmp/.com.microsoft.Edge.VbqnLm",
-    "filename": ".com.microsoft.Edge.VbqnLm",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-04-16 11:02:46"
-  },
-  {
-    "filepath": "/tmp/.com.microsoft.Edge.suSHCY",
-    "filename": ".com.microsoft.Edge.suSHCY",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-04-16 11:02:40"
-  },
-  {
-    "filepath": "/tmp/.com.microsoft.Edge.KO2G5a",
-    "filename": ".com.microsoft.Edge.KO2G5a",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-04-16 11:02:28"
   }
 ]

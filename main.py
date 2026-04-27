@@ -29,6 +29,34 @@ import datetime
 
 from fastapi.middleware.cors import CORSMiddleware
 
+# Import DTOs
+from dtos.encryptRequest import EncryptRequest
+from dtos.flutterPasswords import FlutterPasswords
+from dtos.decryptRequest import DecryptRequest
+from dtos.cryptoResponse import CryptoResponse
+from dtos.passwordGenerateRequest import PasswordGenerateRequest
+from dtos.memberRequest import MemberRequest
+from dtos.flutternoti import FlutterNoti
+from dtos.AiexplainRequest import AIExplainRequest
+from dtos.memberResponse import MemberResponse
+from dtos.memberlistresponse import MemberListResponse
+from dtos.sendPasswordRequest import SendPasswordRequest
+from dtos.scannerAVRequest import ScannerAVRequest
+from dtos.sshScanRequest import SSHScanRequest
+from dtos.signupCodeRequest import SignupCodeRequest
+from dtos.signupRequest import SignupRequest
+from dtos.loginRequest import LoginRequest
+from dtos.updatePasswordRequest import UpdatePasswordRequest
+from dtos.updateProfileRequest import UpdateProfileRequest
+from dtos.forgotPasswordRequest import ForgotPasswordRequest
+from dtos.resetPasswordRequest import ResetPasswordRequest
+from dtos.authResponse import AuthResponse
+from dtos.userSettings import UserSettings
+from dtos.banRequest import BanRequest
+from dtos.unbanRequest import UnbanRequest
+from dtos.adminEmailRequest import AdminEmailRequest
+from dtos.refreshTokenRequest import RefreshTokenRequest
+
 # Global variable to store the monitor process
 monitor_process = None
 
@@ -120,7 +148,8 @@ def init_db():
                 email VARCHAR(255) NOT NULL UNIQUE,
                 telephone VARCHAR(20),
                 password VARCHAR(255) NOT NULL,
-                is_superadmin BOOLEAN DEFAULT FALSE
+                is_superadmin BOOLEAN DEFAULT FALSE,
+                refresh_token TEXT
             )
         """)
         cursor.execute("""
@@ -211,6 +240,13 @@ def init_db():
         except mysql.connector.Error as err:
             if err.errno != 1060: # Duplicate column name
                 print(f"Error adding column is_superadmin to mainuser: {err}")
+        
+        try:
+            cursor.execute("ALTER TABLE mainuser ADD COLUMN refresh_token TEXT")
+            print("Added column refresh_token to mainuser.")
+        except mysql.connector.Error as err:
+            if err.errno != 1060: # Duplicate column name
+                print(f"Error adding column refresh_token to mainuser: {err}")
         conn.commit()
         cursor.close()
         conn.close()
@@ -290,135 +326,6 @@ async def verify_jwt_middleware(request: Request, call_next):
         return JSONResponse(status_code=401, content={"detail": "Token invalide."})
         
     return await call_next(request)
-
-# --- Modèles de données ---
-class EncryptRequest(BaseModel):
-    text: str
-    owner_email: str
-
-class FlutterPasswords(BaseModel):
-    password: str
-    owner_email: str
-
-class DecryptRequest(BaseModel):
-    blob: str
-    owner_email: str
-
-class CryptoResponse(BaseModel):
-    result: str
-
-class PasswordGenerateRequest(BaseModel):
-    owner_email: str
-
-class MemberRequest(BaseModel):
-    fullname: str
-    mail: str
-    owner_email: str
-
-class FlutterNoti(BaseModel):
-    noti :str
-    owner_email:str
-
-class AIExplainRequest(BaseModel):
-    filename: str
-    result: str
-    threat_name: str | None = None
-    heuristic_score: int
-    entropy: float
-
-class MemberResponse(BaseModel):
-    id: int
-    fullname: str
-    mail: str
-    message: str | None = None
-
-class MemberListResponse(BaseModel):
-    members: list[MemberResponse]
-    count: int
-
-class SendPasswordRequest(BaseModel):
-    password: str
-    member_ids: list[int]
-
-class ScannerAVRequest(BaseModel):
-    path: str
-    owner_email: str
-    auto: bool = False
-    report: bool = True
-    html: bool = False
-
-class SSHScanRequest(BaseModel):
-    host: str
-    port: int = 22
-    username: str
-    password: str
-    scan_path: str = "/home"
-
-class SignupCodeRequest(BaseModel):
-    fullname: str
-    email: str
-
-class SignupRequest(BaseModel):
-    fullname: str
-    email: str
-    telephone: str | None = None
-    password: str
-    code: str
-
-class LoginRequest(BaseModel):
-    email: str
-    password: str
-
-class UpdatePasswordRequest(BaseModel):
-    email: str
-    old_password: str
-    new_password: str
-
-class UpdateProfileRequest(BaseModel):
-    email: str
-    fullname: str
-    telephone: str | None = None
-
-class ForgotPasswordRequest(BaseModel):
-    email: str
-
-class ResetPasswordRequest(BaseModel):
-    email: str
-    code: str
-    new_password: str
-
-class AuthResponse(BaseModel):
-    success: bool
-    message: str
-    user: dict | None = None
-
-class UserSettings(BaseModel):
-    email: str
-    random_password_enabled: bool = True
-    encrypted_result_visible: bool = True
-    scan_history_cleanup_mode: str = "Jamais"
-    use_custom_restore_path: bool = False
-    custom_restore_path: str = ""
-    is_ai_analysis_enabled: bool = True
-    is_realtime_analysis_enabled: bool = True
-    require_password_for_delete: bool = True
-    require_password_for_download: bool = True
-
-class BanRequest(BaseModel):
-    user_email: str
-    email: str
-    reason: str | None = None
-
-class UnbanRequest(BaseModel):
-    user_email: str
-    email: str
-
-class AdminEmailRequest(BaseModel):
-    email: str  # admin email (requester)
-    to_email: str  # recipient
-    subject: str
-    body: str
-
 
 # --- Logique Vault ---
 
@@ -1481,6 +1388,18 @@ async def login_endpoint(request: LoginRequest):
             refresh_to_encode = {"sub": user["email"], "exp": refresh_expire, "type": "refresh"}
             refresh_token = jwt.encode(refresh_to_encode, JWT_REFRESH_SECRET_KEY, algorithm=JWT_ALGORITHM)
             
+            # Store REFRESH TOKEN in DB
+            try:
+                conn = mysql.connector.connect(**DB_CONFIG)
+                cursor = conn.cursor()
+                cursor.execute("UPDATE mainuser SET refresh_token = %s WHERE email = %s", (refresh_token, user["email"]))
+                conn.commit()
+                cursor.close()
+                conn.close()
+            except mysql.connector.Error as db_err:
+                print(f"Error storing refresh token: {db_err}")
+                # We can choose to continue or fail. Continuing for now but logging the error.
+            
             return {
                 "success": True, 
                 "message": "Connexion réussie.", 
@@ -1492,9 +1411,6 @@ async def login_endpoint(request: LoginRequest):
             return {"success": False, "message": "Email ou mot de passe incorrect."}
     except mysql.connector.Error as err:
         raise HTTPException(status_code=500, detail=f"Erreur BD: {err}")
-
-class RefreshTokenRequest(BaseModel):
-    refresh_token: str
 
 @app.post("/auth/refresh")
 async def refresh_token_endpoint(request: RefreshTokenRequest):
