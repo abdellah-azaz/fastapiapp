@@ -56,6 +56,7 @@ from dtos.banRequest import BanRequest
 from dtos.unbanRequest import UnbanRequest
 from dtos.adminEmailRequest import AdminEmailRequest
 from dtos.refreshTokenRequest import RefreshTokenRequest
+from dtos.adminCreateUserRequest import AdminCreateUserRequest
 
 # Global variable to store the monitor process
 monitor_process = None
@@ -149,7 +150,9 @@ def init_db():
                 telephone VARCHAR(20),
                 password VARCHAR(255) NOT NULL,
                 is_superadmin BOOLEAN DEFAULT FALSE,
-                refresh_token TEXT
+                refresh_token TEXT,
+                daily_scan_count INT DEFAULT 0,
+                last_scan_date DATE
             )
         """)
         cursor.execute("""
@@ -242,11 +245,18 @@ def init_db():
                 print(f"Error adding column is_superadmin to mainuser: {err}")
         
         try:
-            cursor.execute("ALTER TABLE mainuser ADD COLUMN refresh_token TEXT")
-            print("Added column refresh_token to mainuser.")
+            cursor.execute("ALTER TABLE mainuser ADD COLUMN daily_scan_count INT DEFAULT 0")
+            print("Added column daily_scan_count to mainuser.")
         except mysql.connector.Error as err:
-            if err.errno != 1060: # Duplicate column name
-                print(f"Error adding column refresh_token to mainuser: {err}")
+            if err.errno != 1060:
+                print(f"Error adding column daily_scan_count: {err}")
+        
+        try:
+            cursor.execute("ALTER TABLE mainuser ADD COLUMN last_scan_date DATE")
+            print("Added column last_scan_date to mainuser.")
+        except mysql.connector.Error as err:
+            if err.errno != 1060:
+                print(f"Error adding column last_scan_date: {err}")
         conn.commit()
         cursor.close()
         conn.close()
@@ -291,14 +301,7 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Configuration CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"], # En production, spécifier l'URL exacte du front
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+
 
 @app.middleware("http")
 async def verify_jwt_middleware(request: Request, call_next):
@@ -326,6 +329,16 @@ async def verify_jwt_middleware(request: Request, call_next):
         return JSONResponse(status_code=401, content={"detail": "Token invalide."})
         
     return await call_next(request)
+
+# Configuration CORS 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False, # Credentials not needed for JWT in headers
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 # --- Logique Vault ---
 
@@ -385,6 +398,44 @@ def save_to_db(encrypted_text: str, owner_email: str):
         conn.close()
     except mysql.connector.Error as err:
         raise HTTPException(status_code=500, detail=f"Erreur base de données: {err}")
+
+def increment_daily_scan_count(email: str):
+    """Incrémente le compteur de scans quotidiens et gère la réinitialisation journalière."""
+    try:
+        conn = mysql.connector.connect(**DB_CONFIG)
+        cursor = conn.cursor(dictionary=True)
+        
+        # Récupérer l'état actuel de l'utilisateur
+        cursor.execute("SELECT daily_scan_count, last_scan_date FROM mainuser WHERE email = %s", (email,))
+        user = cursor.fetchone()
+        
+        if not user:
+            cursor.close()
+            conn.close()
+            return
+            
+        today = datetime.date.today()
+        last_date = user.get("last_scan_date")
+        
+        if last_date != today:
+            # Nouveau jour, réinitialiser à 1
+            cursor.execute(
+                "UPDATE mainuser SET daily_scan_count = 1, last_scan_date = %s WHERE email = %s",
+                (today, email)
+            )
+        else:
+            # Même jour, incrémenter
+            cursor.execute(
+                "UPDATE mainuser SET daily_scan_count = daily_scan_count + 1 WHERE email = %s",
+                (email,)
+            )
+            
+        conn.commit()
+        cursor.close()
+        conn.close()
+        print(f"DEBUG: Scan incrémenté pour {email}")
+    except mysql.connector.Error as err:
+        print(f"Error incrementing scan count for {email}: {err}")
 
 # --- Routes API ---
 @app.post("/encrypt", response_model=CryptoResponse)
@@ -850,10 +901,14 @@ async def send_plain_password_to_members(request: SendPasswordRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/scanner")
-async def scan_endpoint():
+async def scan_endpoint(request: Request):
     """
     Détecte l'OS, lance le scanner approprié et retourne les résultats.
     """
+    email = getattr(request.state, "user_email", None)
+    if email:
+        increment_daily_scan_count(email)
+
     systeme = platform.system()
     base_dir = os.path.dirname(os.path.abspath(__file__))
     
@@ -889,14 +944,14 @@ async def scan_endpoint():
         raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
 
 @app.post("/scannerav")
-async def scanner_av_endpoint(request: ScannerAVRequest):
+async def scanner_av_endpoint(req_body: ScannerAVRequest, request: Request):
     """
     Lance un scan multi-couches (ClamAV, SHA256, Heuristique, Entropie) via le binaire AV-Shield.
     """
     import re
     import traceback
     
-    print(f"DEBUG: Requête scannerav pour le chemin: {request.path}")
+    print(f"DEBUG: Requête scannerav pour le chemin: {req_body.path}")
     
     # Configuration des chemins selon l'OS détecté
     av_shield_dir, av_bin, reports_dir, _ = get_av_paths()
@@ -906,12 +961,18 @@ async def scanner_av_endpoint(request: ScannerAVRequest):
         raise HTTPException(status_code=500, detail=f"Binaire AV-Shield introuvable à {av_bin}")
 
     # Construction de la commande
-    cmd = [av_bin, "scan", request.path]
-    if request.report:
+    # Incrémenter le compteur de scans
+    email_to_increment = req_body.owner_email or getattr(request.state, "user_email", None)
+    if email_to_increment:
+        increment_daily_scan_count(email_to_increment)
+
+
+    cmd = [av_bin, "scan", req_body.path]
+    if getattr(req_body, 'report', False):
         cmd.append("--report")
-    if request.html:
+    if getattr(req_body, 'html', False):
         cmd.append("--html")
-    if request.auto:
+    if req_body.auto:
         cmd.append("--auto")
 
     print(f"DEBUG: Exécution de la commande: {' '.join(cmd)}")
@@ -1126,11 +1187,38 @@ async def cleanup_av_history(days: int, email: str):
         conn.commit()
         conn.close()
 
-        # 3. Nettoyer les mappings dans MySQL
+        # 3. Nettoyer les mappings dans MySQL en préservant ceux liés à la quarantaine
+        # 3a. Récupérer les chemins en quarantaine
+        conn_q = sqlite3.connect(db_path)
+        cursor_q = conn_q.cursor()
+        cursor_q.execute("SELECT original_path FROM quarantine WHERE restored = 0")
+        active_quarantine_paths = [row[0] for row in cursor_q.fetchall()]
+        conn_q.close()
+
         if days < 0:
-            cursor_m.execute("DELETE FROM av_scan_mappings WHERE owner_email = %s", (email,))
+            if active_quarantine_paths:
+                # Tout supprimer SAUF ceux qui sont des préfixes de chemins en quarantaine
+                # C'est complexe en une seule requête SQL, on va faire au mieux:
+                # On garde les mappings qui sont "contenus" dans les chemins de quarantaine
+                placeholders = ','.join(['%s'] * len(active_quarantine_paths))
+                query = "DELETE FROM av_scan_mappings WHERE owner_email = %s"
+                params = [email]
+                for path in active_quarantine_paths:
+                    query += " AND %s NOT LIKE CONCAT('%%', filename, '%%')"
+                    params.append(path)
+                cursor_m.execute(query, tuple(params))
+            else:
+                cursor_m.execute("DELETE FROM av_scan_mappings WHERE owner_email = %s", (email,))
         else:
-            cursor_m.execute("DELETE FROM av_scan_mappings WHERE owner_email = %s AND created_at < %s", (email, limit_date_dt))
+            if active_quarantine_paths:
+                query = "DELETE FROM av_scan_mappings WHERE owner_email = %s AND created_at < %s"
+                params = [email, limit_date_dt]
+                for path in active_quarantine_paths:
+                    query += " AND %s NOT LIKE CONCAT('%%', filename, '%%')"
+                    params.append(path)
+                cursor_m.execute(query, tuple(params))
+            else:
+                cursor_m.execute("DELETE FROM av_scan_mappings WHERE owner_email = %s AND created_at < %s", (email, limit_date_dt))
         
         conn_m.commit()
         cursor_m.close()
@@ -1196,12 +1284,28 @@ async def restore_quarantine_file(filename: str, email: str, destination: str = 
     
     print(f"DEBUG: Requête Restauration pour {email}: {filename}")
     
-    # 1. Valider la propriété
+    # 1. Obtenir le chemin original depuis SQLite
+    _, _, _, db_path = get_av_paths()
+    try:
+        import sqlite3
+        conn_s = sqlite3.connect(db_path)
+        cursor_s = conn_s.cursor()
+        cursor_s.execute("SELECT original_path FROM quarantine WHERE quarantine_name = ?", (filename,))
+        row = cursor_s.fetchone()
+        conn_s.close()
+        
+        if not row:
+            raise HTTPException(status_code=404, detail="Fichier non trouvé en quarantaine.")
+        original_path = row[0]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lookup SQLite: {str(e)}")
+
+    # 2. Valider la propriété via MySQL
     try:
         conn = mysql.connector.connect(**DB_CONFIG)
         cursor = conn.cursor()
-        # On vérifie si l'utilisateur a déjà scanné ce fichier
-        cursor.execute("SELECT id FROM av_scan_mappings WHERE owner_email = %s AND filename LIKE %s", (email, f"%{filename}%"))
+        # On vérifie si l'utilisateur a déjà scanné ce fichier (le chemin scanné doit être un préfixe ou sous-ensemble du chemin original)
+        cursor.execute("SELECT id FROM av_scan_mappings WHERE owner_email = %s AND %s LIKE CONCAT('%%', filename, '%%')", (email, original_path))
         mapping = cursor.fetchone()
         cursor.close()
         conn.close()
@@ -1244,15 +1348,31 @@ async def restore_quarantine_file(filename: str, email: str, destination: str = 
 async def delete_quarantine_file(filename: str, email: str):
     """Supprime définitivement un fichier de la quarantaine avec validation de propriété"""
     import traceback
-    av_shield_dir, av_bin, _, _ = get_av_paths()
+    av_shield_dir, av_bin, _, db_path = get_av_paths()
 
     print(f"DEBUG: Suppression de {filename} par {email}")
     
-    # 1. Valider la propriété
+    # 1. Obtenir le chemin original depuis SQLite
+    try:
+        import sqlite3
+        conn_s = sqlite3.connect(db_path)
+        cursor_s = conn_s.cursor()
+        cursor_s.execute("SELECT original_path FROM quarantine WHERE quarantine_name = ?", (filename,))
+        row = cursor_s.fetchone()
+        conn_s.close()
+        
+        if not row:
+            raise HTTPException(status_code=404, detail="Fichier non trouvé en quarantaine.")
+        original_path = row[0]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lookup SQLite: {str(e)}")
+
+    # 2. Valider la propriété via MySQL
     try:
         conn = mysql.connector.connect(**DB_CONFIG)
         cursor = conn.cursor()
-        cursor.execute("SELECT id FROM av_scan_mappings WHERE owner_email = %s AND filename LIKE %s", (email, f"%{filename}%"))
+        # On vérifie si l'utilisateur a déjà scanné ce fichier
+        cursor.execute("SELECT id FROM av_scan_mappings WHERE owner_email = %s AND %s LIKE CONCAT('%%', filename, '%%')", (email, original_path))
         mapping = cursor.fetchone()
         cursor.close()
         conn.close()
@@ -1411,6 +1531,43 @@ async def login_endpoint(request: LoginRequest):
             return {"success": False, "message": "Email ou mot de passe incorrect."}
     except mysql.connector.Error as err:
         raise HTTPException(status_code=500, detail=f"Erreur BD: {err}")
+
+@app.post("/admin/create-user")
+async def admin_create_user(request: AdminCreateUserRequest, req: Request):
+    """Permet à un superadmin de créer un nouvel utilisateur directement."""
+    user_email = getattr(req.state, "user_email", None)
+    if not user_email:
+        raise HTTPException(status_code=401, detail="Non autorisé")
+        
+    try:
+        conn = mysql.connector.connect(**DB_CONFIG)
+        cursor = conn.cursor(dictionary=True)
+        
+        # Vérifier si l'appelant est superadmin
+        cursor.execute("SELECT is_superadmin FROM mainuser WHERE email = %s", (user_email,))
+        caller = cursor.fetchone()
+        
+        if not caller or not caller["is_superadmin"]:
+            cursor.close()
+            conn.close()
+            raise HTTPException(status_code=403, detail="Accès refusé. Superadmin requis.")
+            
+        # Créer le hash du mot de passe
+        hashed_pw = hash_password(request.password)
+        
+        # Insérer le nouvel utilisateur
+        query = "INSERT INTO mainuser (fullname, email, telephone, password, is_superadmin) VALUES (%s, %s, %s, %s, %s)"
+        cursor.execute(query, (request.fullname, request.email, request.telephone, hashed_pw, False))
+        conn.commit()
+        
+        cursor.close()
+        conn.close()
+        return {"success": True, "message": "Utilisateur créé avec succès par l'administrateur."}
+    except mysql.connector.Error as err:
+        if err.errno == 1062: # Duplicate entry
+             return {"success": False, "message": "Cet email est déjà utilisé."}
+        return {"success": False, "message": f"Erreur base de données: {err}"}
+
 
 @app.post("/auth/refresh")
 async def refresh_token_endpoint(request: RefreshTokenRequest):
@@ -2006,7 +2163,35 @@ async def explain_detection(req: AIExplainRequest):
     )
     return {"explanation": explanation}
 
+@app.get("/admin/stats/scans")
+async def get_scan_stats(request: Request):
+    """Retourne le nombre de scans par utilisateur pour les statistiques."""
+    # Check if superadmin
+    email = getattr(request.state, "user_email", None)
+    if not email:
+        raise HTTPException(status_code=401, detail="Non autorisé.")
+        
+    try:
+        conn = mysql.connector.connect(**DB_CONFIG)
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT is_superadmin FROM mainuser WHERE email = %s", (email,))
+        user_db = cursor.fetchone()
+        if not user_db or not user_db["is_superadmin"]:
+            cursor.close()
+            conn.close()
+            raise HTTPException(status_code=403, detail="Accès refusé.")
+            
+        cursor.execute("SELECT fullname, daily_scan_count FROM mainuser WHERE daily_scan_count > 0 ORDER BY daily_scan_count DESC")
+        stats = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        return stats
+    except mysql.connector.Error as err:
+        raise HTTPException(status_code=500, detail=f"Erreur BD: {err}")
+
 if __name__ == "__main__":
+
     import uvicorn
     host = os.environ.get("APP_HOST", "0.0.0.0")
     port = int(os.environ.get("APP_PORT", "8000"))
