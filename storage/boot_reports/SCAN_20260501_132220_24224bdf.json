@@ -1,0 +1,165 @@
+{
+    "date_scan": "2026-05-01T13:22:14.545399",
+    "systeme": {
+        "hostname": "abdellah-Latitude-5290",
+        "distro": "Ubuntu 24.04.4 LTS",
+        "kernel": "6.17.0-20-generic",
+        "architecture": "x86_64",
+        "ram_gb": 7,
+        "cpu_cores": 8,
+        "est_root": false
+    },
+    "comptes": {
+        "utilisateurs": [
+            {
+                "nom": "root",
+                "actif": true,
+                "mdp_expire_jamais": false
+            },
+            {
+                "nom": "abdellah",
+                "actif": true,
+                "mdp_expire_jamais": false
+            },
+            {
+                "nom": "azaz",
+                "actif": true,
+                "mdp_expire_jamais": false
+            }
+        ],
+        "uid0": [
+            "root"
+        ],
+        "sudoers": [
+            "abdellah"
+        ],
+        "shadow_permissions": "640",
+        "nombre_admins": 1
+    },
+    "reseau": {
+        "ports_ouverts": [
+            {
+                "port": 22,
+                "service": "ssh"
+            },
+            {
+                "port": 53,
+                "service": "domain"
+            },
+            {
+                "port": 80,
+                "service": "http"
+            },
+            {
+                "port": 631,
+                "service": "ipp"
+            },
+            {
+                "port": 3306,
+                "service": "mysql"
+            },
+            {
+                "port": 8000,
+                "service": "inconnu"
+            },
+            {
+                "port": 34125,
+                "service": "inconnu"
+            },
+            {
+                "port": 36315,
+                "service": "inconnu"
+            },
+            {
+                "port": 37703,
+                "service": "inconnu"
+            },
+            {
+                "port": 40303,
+                "service": "inconnu"
+            },
+            {
+                "port": 45319,
+                "service": "inconnu"
+            },
+            {
+                "port": 45907,
+                "service": "inconnu"
+            },
+            {
+                "port": 46159,
+                "service": "inconnu"
+            }
+        ],
+        "ufw_status": "inactive",
+        "samba_active": false
+    },
+    "ports_externes": {
+        "ip_publique": "102.52.165.168",
+        "ports_exposes": [],
+        "nombre_exposes": 0
+    },
+    "securite": {
+        "apparmor_enabled": false,
+        "selinux_status": "Disabled",
+        "ssh_permit_root": "unknown",
+        "ssh_password_auth": "unknown",
+        "suid_examples": [
+            "/usr/bin/chfn",
+            "/usr/bin/mount",
+            "/usr/bin/fusermount3",
+            "/usr/bin/newuidmap",
+            "/usr/bin/newgidmap"
+        ]
+    },
+    "logiciels": {
+        "total_paquets": 2131,
+        "maj_securite_pendantes": 0
+    },
+    "persistence": {
+        "services_running_top": [
+            "accounts-daemon.service       loaded active running Accounts Service",
+            "  apache2.service               loaded active running The Apache HTTP Server",
+            "  avahi-daemon.service          loaded active running Avahi mDNS/DNS-SD Stack",
+            "  bluetooth.service             loaded active running Bluetooth service",
+            "  clamav-daemon.service         loaded active running Clam AntiVirus userspace daemon",
+            "  colord.service                loaded active running Manage, Install and Generate Color Profiles",
+            "  cron.service                  loaded active running Regular background program processing daemon",
+            "  cups-browsed.service          loaded active running Make remote CUPS printers available locally",
+            "  cups.service                  loaded active running CUPS Scheduler",
+            "  dbus.service                  loaded active running D-Bus System Message Bus"
+        ],
+        "cron_files": [
+            "/etc/cron.d:",
+            "anacron",
+            "e2scrub_all",
+            "php",
+            "sysstat",
+            "",
+            "/etc/cron.daily:",
+            "0anacron",
+            "apache2",
+            "apport",
+            "apt-compat",
+            "dpkg",
+            "google-chrome",
+            "logrotate",
+            "man-db",
+            "microsoft-edge",
+            "sysstat"
+        ]
+    },
+    "logs": {
+        "echecs_connexion": 0
+    },
+    "risques": [
+        {
+            "niveau": "CRITIQUE",
+            "message": "Pare-feu UFW désactivé"
+        },
+        {
+            "niveau": "MOYEN",
+            "message": "SSH : Root login autorisé ou non configuré"
+        }
+    ]
+}

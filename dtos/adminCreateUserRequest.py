@@ -5,3 +5,4 @@ class AdminCreateUserRequest(BaseModel):
     email: str
     telephone: str | None = None
     password: str
+    is_superadmin: bool = False

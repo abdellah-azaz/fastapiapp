@@ -57,6 +57,7 @@ from dtos.unbanRequest import UnbanRequest
 from dtos.adminEmailRequest import AdminEmailRequest
 from dtos.refreshTokenRequest import RefreshTokenRequest
 from dtos.adminCreateUserRequest import AdminCreateUserRequest
+from dtos.sshHostRequest import SSHHostRequest
 
 # Global variable to store the monitor process
 monitor_process = None
@@ -74,6 +75,43 @@ def get_av_paths():
     reports_dir = os.path.join(av_shield_dir, "reports")
     db_path = os.path.join(av_shield_dir, "database", "avshield.db")
     return av_shield_dir, av_bin, reports_dir, db_path
+
+
+def encrypt_ssh_password(password: str) -> str:
+    """Chiffre le mot de passe SSH en utilisant AES-GCM."""
+    if not password:
+        return ""
+    try:
+        key_hex = os.environ.get("CLE_SSH_PASS")
+        if not key_hex:
+            return password
+        key = bytes.fromhex(key_hex)
+        aesgcm = AESGCM(key)
+        nonce = os.urandom(12)
+        ciphertext = aesgcm.encrypt(nonce, password.encode(), None)
+        return base64.b64encode(nonce + ciphertext).decode()
+    except Exception as e:
+        print(f"Encryption error: {e}")
+        return password
+
+
+def decrypt_ssh_password(encrypted_password: str) -> str:
+    """Déchiffre le mot de passe SSH en utilisant AES-GCM."""
+    if not encrypted_password:
+        return ""
+    try:
+        key_hex = os.environ.get("CLE_SSH_PASS")
+        if not key_hex:
+            return encrypted_password
+        key = bytes.fromhex(key_hex)
+        data = base64.b64decode(encrypted_password)
+        nonce = data[:12]
+        ciphertext = data[12:]
+        aesgcm = AESGCM(key)
+        decrypted = aesgcm.decrypt(nonce, ciphertext, None)
+        return decrypted.decode()
+    except Exception as e:
+        return encrypted_password
 
 
 # Simulation d'un stockage de codes (En prod, utiliser Redis/DB avec expiration)
@@ -212,12 +250,35 @@ def init_db():
             )
         """)
         cursor.execute("""
+            CREATE TABLE IF NOT EXISTS boot_scan_history (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                scan_id VARCHAR(255) NOT NULL,
+                filename TEXT NOT NULL,
+                owner_email VARCHAR(255) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX (owner_email),
+                INDEX (scan_id)
+            )
+        """)
+        cursor.execute("""
             CREATE TABLE IF NOT EXISTS banned_users (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 email VARCHAR(255) NOT NULL UNIQUE,
                 reason TEXT,
                 banned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (email) REFERENCES mainuser(email) ON DELETE CASCADE
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS ssh_hosts (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(255),
+                host VARCHAR(255) NOT NULL,
+                port INT DEFAULT 22,
+                username VARCHAR(255) NOT NULL,
+                owner_email VARCHAR(255) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (owner_email) REFERENCES mainuser(email) ON DELETE CASCADE
             )
         """)
         conn.commit()
@@ -270,6 +331,11 @@ async def lifespan(app: FastAPI):
     # Startup: Initialize the database
     init_db()
     
+    # Create storage directories
+    os.makedirs("storage/boot_reports", exist_ok=True)
+    av_shield_dir, _, reports_dir, _ = get_av_paths()
+    os.makedirs(reports_dir, exist_ok=True)
+    
     # Démarrage automatique du moniteur temps réel
     try:
         base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -308,6 +374,7 @@ async def verify_jwt_middleware(request: Request, call_next):
     # Les routes publiques
     public_paths = [
         "/auth", # tous les endpoints auth comme login, signup, code, etc.
+        "/ssh",  # on autorise /ssh pour gérer l'auth dans les endpoints (fallback email)
         "/docs",
         "/openapi.json"
     ]
@@ -938,6 +1005,28 @@ async def scan_endpoint(request: Request):
         with open(result_path, "r", encoding="utf-8") as f:
             data = json.load(f)
             
+        # Save report with unique ID
+        scan_id = f"SCAN_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
+        boot_report_path = os.path.join("storage/boot_reports", f"{scan_id}.json")
+        with open(boot_report_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=4, ensure_ascii=False)
+            
+        # Record in history
+        try:
+            conn_m = mysql.connector.connect(**DB_CONFIG)
+            cursor_m = conn_m.cursor()
+            cursor_m.execute(
+                "INSERT INTO boot_scan_history (scan_id, filename, owner_email) VALUES (%s, %s, %s)",
+                (scan_id, systeme, email)
+            )
+            conn_m.commit()
+            cursor_m.close()
+            conn_m.close()
+            print(f"DEBUG: Boot scan recorded: {scan_id} for {email}")
+        except Exception as me:
+            print(f"ERROR: Erreur enregistrement historique boot: {me}")
+
+        data["scan_id"] = scan_id
         return data
 
     except Exception as e:
@@ -1142,6 +1231,97 @@ async def get_av_history(email: str):
         print(f"ERROR: Exception dans get_av_history: {str(e)}")
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/boot/history")
+async def get_boot_history(request: Request):
+    """Récupère l'historique des audits de sécurité (boot) pour l'utilisateur."""
+    email = getattr(request.state, "user_email", None)
+    if not email:
+        raise HTTPException(status_code=401, detail="Non autorisé")
+        
+    try:
+        conn = mysql.connector.connect(**DB_CONFIG)
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(
+            "SELECT scan_id, filename, created_at FROM boot_scan_history WHERE owner_email = %s ORDER BY created_at DESC",
+            (email,)
+        )
+        history = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return history
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/reports/download/{scan_id}")
+async def download_report_endpoint(scan_id: str, request: Request):
+    """Télécharge un rapport (AV ou Boot) après vérification de propriété."""
+    email = getattr(request.state, "user_email", None)
+    if not email:
+        raise HTTPException(status_code=401, detail="Non autorisé")
+
+    report_path = None
+    
+    # 1. Chercher dans l'historique Boot
+    conn = mysql.connector.connect(**DB_CONFIG)
+    cursor = conn.cursor()
+    cursor.execute("SELECT owner_email FROM boot_scan_history WHERE scan_id = %s", (scan_id,))
+    row = cursor.fetchone()
+    
+    if row:
+        if row[0] != email:
+            cursor.close()
+            conn.close()
+            raise HTTPException(status_code=403, detail="Accès refusé à ce rapport")
+        report_path = os.path.join("storage/boot_reports", f"{scan_id}.json")
+    else:
+        # 2. Chercher dans l'historique AV
+        cursor.execute("SELECT owner_email FROM av_scan_mappings WHERE scan_id = %s", (scan_id,))
+        row = cursor.fetchone()
+        if row:
+            if row[0] != email:
+                cursor.close()
+                conn.close()
+                raise HTTPException(status_code=403, detail="Accès refusé à ce rapport")
+            
+            # Pour AV, le scan_id est souvent le nom du fichier RPT_XXX.json
+            # ou un ID interne. Cherchons le fichier JSON correspondant.
+            _, _, reports_dir, _ = get_av_paths()
+            # Si le scan_id contient déjà .json ou est le préfixe
+            potential_file = scan_id if scan_id.endswith(".json") else f"{scan_id}.json"
+            report_path = os.path.join(reports_dir, potential_file)
+            
+            # Si pas trouvé, essayer de voir si scan_id est juste l'ID dans le mapping
+            if not os.path.exists(report_path):
+                # Dans scannerav, on enregistre report_data.get("report_id") comme scan_id
+                # On doit retrouver le fichier physique.
+                # Souvent c'est RPT_...
+                # On va lister reports_dir et chercher le fichier qui contient cet ID
+                found = False
+                for f in os.listdir(reports_dir):
+                    if f.endswith(".json"):
+                        with open(os.path.join(reports_dir, f), 'r') as rfile:
+                            try:
+                                rdata = json.load(rfile)
+                                if rdata.get("report_id") == scan_id:
+                                    report_path = os.path.join(reports_dir, f)
+                                    found = True
+                                    break
+                            except: continue
+                if not found:
+                    report_path = None
+
+    cursor.close()
+    conn.close()
+
+    if not report_path or not os.path.exists(report_path):
+        raise HTTPException(status_code=404, detail="Rapport introuvable")
+
+    return StreamingResponse(
+        open(report_path, "rb"),
+        media_type="application/json",
+        headers={"Content-Disposition": f"attachment; filename={os.path.basename(report_path)}"}
+    )
 
 @app.delete("/av/history/cleanup/{days}")
 async def cleanup_av_history(days: int, email: str):
@@ -1552,12 +1732,14 @@ async def admin_create_user(request: AdminCreateUserRequest, req: Request):
             conn.close()
             raise HTTPException(status_code=403, detail="Accès refusé. Superadmin requis.")
             
+        print(f"DEBUG: admin_create_user requested for {request.email}, is_superadmin={request.is_superadmin}")
+            
         # Créer le hash du mot de passe
         hashed_pw = hash_password(request.password)
         
         # Insérer le nouvel utilisateur
         query = "INSERT INTO mainuser (fullname, email, telephone, password, is_superadmin) VALUES (%s, %s, %s, %s, %s)"
-        cursor.execute(query, (request.fullname, request.email, request.telephone, hashed_pw, False))
+        cursor.execute(query, (request.fullname, request.email, request.telephone, hashed_pw, 1 if request.is_superadmin else 0))
         conn.commit()
         
         cursor.close()
@@ -2190,6 +2372,106 @@ async def get_scan_stats(request: Request):
     except mysql.connector.Error as err:
         raise HTTPException(status_code=500, detail=f"Erreur BD: {err}")
 
+###########################################################
+
+@app.get("/auth/profile")
+async def get_profile(request: Request, email: str = None):
+    """Récupère les informations de profil et les statistiques de scan."""
+    user_email = email or getattr(request.state, "user_email", None)
+    if not user_email:
+        raise HTTPException(status_code=401, detail="Non autorisé")
+        
+    try:
+        conn = mysql.connector.connect(**DB_CONFIG)
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT fullname, email, telephone, daily_scan_count, last_scan_date, is_superadmin FROM mainuser WHERE email = %s", (user_email,))
+        user = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        
+        if not user:
+            raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+            
+        return {
+            "success": True,
+            "user": user,
+            "quota_limit": 30
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/ssh/hosts")
+async def list_ssh_hosts(request: Request, email: str = None):
+    """Liste les serveurs SSH enregistrés pour l'utilisateur."""
+    user_email = email or getattr(request.state, "user_email", None)
+    if not user_email:
+        raise HTTPException(status_code=401, detail="Non autorisé")
+        
+    try:
+        print(f"DEBUG: Récupération des hôtes SSH pour {user_email}")
+        conn = mysql.connector.connect(**DB_CONFIG)
+        cursor = conn.cursor(dictionary=True)
+        # Utilise 'ssh_info' et 'host' comme fallback pour le nom
+        cursor.execute("SELECT id, host as name, host, port, username, password FROM ssh_info WHERE owner_email = %s", (user_email,))
+        hosts = cursor.fetchall()
+        print(f"DEBUG: {len(hosts)} hôtes trouvés.")
+        for h in hosts:
+            if h.get("password"):
+                h["password"] = decrypt_ssh_password(h["password"])
+        cursor.close()
+        conn.close()
+        return hosts
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/ssh/hosts")
+async def add_ssh_host(host_request: SSHHostRequest, request: Request):
+    """Enregistre un nouveau serveur SSH."""
+    user_email = getattr(request.state, "user_email", None) or host_request.owner_email
+    if not user_email:
+        raise HTTPException(status_code=401, detail="Non autorisé")
+        
+    try:
+        print(f"DEBUG: Ajout de l'hôte SSH pour {user_email}: {host_request.host}")
+        conn = mysql.connector.connect(**DB_CONFIG)
+        cursor = conn.cursor()
+        # Chiffrement du mot de passe avant stockage
+        encrypted_pass = encrypt_ssh_password(host_request.password) if host_request.password else None
+        
+        # Insertion dans 'ssh_info' (on ignore 'name' car la table ne l'a pas)
+        query = "INSERT INTO ssh_info (owner_email, host, port, username, password) VALUES (%s, %s, %s, %s, %s)"
+        cursor.execute(query, (user_email, host_request.host, host_request.port, host_request.username, encrypted_pass))
+        conn.commit()
+        host_id = cursor.lastrowid
+        print(f"DEBUG: Hôte inséré avec l'ID {host_id}")
+        cursor.close()
+        conn.close()
+        return {"success": True, "id": host_id, "message": "Serveur SSH enregistré !"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/ssh/hosts/{host_id}")
+async def delete_ssh_host(host_id: int, request: Request, email: str = None):
+    """Supprime un serveur SSH enregistré."""
+    user_email = email or getattr(request.state, "user_email", None)
+    if not user_email:
+        raise HTTPException(status_code=401, detail="Non autorisé")
+        
+    try:
+        conn = mysql.connector.connect(**DB_CONFIG)
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM ssh_info WHERE id = %s AND owner_email = %s", (host_id, user_email))
+        conn.commit()
+        if cursor.rowcount == 0:
+            cursor.close()
+            conn.close()
+            raise HTTPException(status_code=404, detail="Hôte non trouvé ou accès refusé")
+        cursor.close()
+        conn.close()
+        return {"success": True, "message": "Hôte supprimé."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
 
     import uvicorn
@@ -2197,6 +2479,4 @@ if __name__ == "__main__":
     port = int(os.environ.get("APP_PORT", "8000"))
     uvicorn.run(app, host=host, port=port)
 
-
-###########################################################
 

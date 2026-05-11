@@ -1,5 +1,26 @@
 [
   {
+    "filepath": "/tmp/.ses",
+    "filename": ".ses",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-05-08 00:08:17"
+  },
+  {
+    "filepath": "/tmp/cv_debug.log",
+    "filename": "cv_debug.log",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-05-08 00:08:16"
+  },
+  {
+    "filepath": "/tmp/verify_create_superadmin.py",
+    "filename": "verify_create_superadmin.py",
+    "result": "CLEAN",
+    "threat": "None",
+    "timestamp": "2026-05-04 14:12:12"
+  },
+  {
     "filepath": "/home/abdellah/Downloads/decrypted_Table_matieres_PFE_2_projets.docx",
     "filename": "decrypted_Table_matieres_PFE_2_projets.docx",
     "result": "CLEAN",
@@ -327,26 +348,5 @@
     "result": "CLEAN",
     "threat": "None",
     "timestamp": "2026-04-16 11:05:16"
-  },
-  {
-    "filepath": "/tmp/.com.microsoft.Edge.8GghCG",
-    "filename": ".com.microsoft.Edge.8GghCG",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-04-16 11:04:56"
-  },
-  {
-    "filepath": "/tmp/.com.microsoft.Edge.hhBBGK",
-    "filename": ".com.microsoft.Edge.hhBBGK",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-04-16 11:04:53"
-  },
-  {
-    "filepath": "/tmp/.com.microsoft.Edge.W9tQXN",
-    "filename": ".com.microsoft.Edge.W9tQXN",
-    "result": "CLEAN",
-    "threat": "None",
-    "timestamp": "2026-04-16 11:04:36"
   }
 ]
